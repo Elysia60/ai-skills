@@ -1,6 +1,6 @@
 # AI Skills
 
-两个即装即用的 agent skill,一个练人,一个练刀。
+三个即装即用的 agent skill:一个练人,一个练刀,一个管舰队。
 
 ## 🧠 ai-four-powers — 平民AI四力
 
@@ -10,13 +10,17 @@
 
 基于 Trail of Bits 方法论的代码仓库审计 skill:先建心智模型再找漏洞,STRIDE 威胁建模,只报带证据的高置信发现,附变体分析与成熟度评分。
 
+## 🚀 agent-fleet-ops — 三端 Agent 舰队运维
+
+连接本机 Claude Code / Codex / ZCode:统一知识库中枢(~/ai-kb)、ai-doctor 全链路体检、sync-skills 技能四端同步发布、CLAUDE.md/AGENTS.md 共享上下文接线。内置两个已验证脚本,新机器可一键重建整套体系。
+
 ## 安装
 
 复制对应文件夹到你的 skills 目录(如 `~/.agents/skills/` 或 `~/.zcode/skills/`):
 
 ```bash
 git clone https://github.com/Elysia60/ai-skills.git
-cp -r ai-skills/ai-four-powers ai-skills/glm-security-audit ~/.agents/skills/
+cp -r ai-skills/ai-four-powers ai-skills/glm-security-audit ai-skills/agent-fleet-ops ~/.agents/skills/
 ```
 
 ## License

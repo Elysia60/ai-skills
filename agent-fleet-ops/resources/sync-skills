@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# sync-skills — 自定义技能四端同步 + 发布 GitHub
+# 用法: bash ~/ai-kb/bin/sync-skills "本次改动备注"
+set -eu
+SRC="${SKILLS_SRC:-$HOME/.zcode/workspace/default/ai-skills}"  # 可用环境变量覆盖
+MSG="${1:-chore: sync skills}"
+DIRS=("$HOME/.claude/skills" "$HOME/.agents/skills" "$HOME/.zcode/skills" "$HOME/.codex/skills")
+
+[ -d "$SRC" ] || { echo "✗ 技能源不存在: $SRC"; exit 1; }
+
+echo "── 源: $SRC"
+for s in "$SRC"/*/; do
+  name=$(basename "$s")
+  [ "$name" = ".git" ] && continue
+  [ ! -f "$s/SKILL.md" ] && { echo "  ! 跳过 $name(无 SKILL.md)"; continue; }
+  for d in "${DIRS[@]}"; do
+    mkdir -p "$d"
+    if [ ! -d "$d/$name" ] || ! diff -qr "$s" "$d/$name" >/dev/null 2>&1; then
+      rm -rf "$d/$name"; cp -r "$s" "$d/$name"
+      echo "  → $name ⇒ $(echo "$d" | sed "s|$HOME|~|")"
+    fi
+  done
+done
+
+echo "── 发布 GitHub"
+cd "$SRC"
+if [ -n "$(git status --porcelain)" ]; then
+  git add -A && git commit -m "$MSG" && git push && echo "  ✓ 已推送: $(git remote get-url origin)"
+else
+  echo "  = 无改动,跳过"
+fi
+echo "完成。"

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# ai-doctor — 三端 Agent 全链路体检
+# 用法: bash ~/ai-kb/bin/ai-doctor
+set -u
+G="\033[32m"; R="\033[31m"; Y="\033[33m"; W="\033[0m"
+ok(){ echo -e "  ${G}✓${W} $1"; }
+bad(){ echo -e "  ${R}✗${W} $1"; }
+warn(){ echo -e "  ${Y}!${W} $1"; }
+
+echo "════════ AI 全链路体检 $(date '+%F %T') ════════"
+
+echo "── CLI 可用性 ──"
+command -v claude >/dev/null 2>&1 && ok "claude  $(claude --version 2>/dev/null | head -1)" || bad "claude 未安装/不在 PATH"
+command -v codex  >/dev/null 2>&1 && ok "codex   $(codex --version 2>/dev/null | head -1)" || bad "codex 未安装"
+command -v gh     >/dev/null 2>&1 && ok "gh      $(gh --version 2>/dev/null | head -1)" || bad "gh 未安装"
+
+echo "── GitHub 认证 ──"
+ACC=$(gh auth status 2>&1 | grep -oP 'account \K\S+(?= \(keyring\))' | head -1)
+[ -n "$ACC" ] && ok "已登录: $ACC" || bad "gh 未登录(运行 gh auth login)"
+
+echo "── 模型路由 ──"
+grep -q '^\[model_providers.zhipu\]' ~/.codex/config.toml 2>/dev/null && ok "Codex zhipu provider 配置存在" || warn "Codex 缺 zhipu provider"
+CUR=$(grep -s '^model = ' ~/.codex/config.toml | head -1 | cut -d'"' -f2)
+echo "     Codex 当前模型: ${CUR:-未知}"
+if [ -n "${ZHIPU_API_KEY:-}" ] || grep -q '"ZHIPU_API_KEY"' ~/.codex/auth.json 2>/dev/null; then
+  ok "GLM API key 已配置"
+else
+  warn "GLM API key 未配置 → bigmodel.cn/usercenter/apikeys 创建后交给 agent 写入"
+fi
+
+echo "── 技能目录 ──"
+for d in ~/.claude/skills ~/.agents/skills ~/.zcode/skills ~/.codex/skills; do
+  N=$(ls "$d" 2>/dev/null | wc -l)
+  [ "$N" -gt 0 ] && ok "$(basename $(dirname $d))/$(basename $d): $N" || warn "$d 为空"
+done
+for s in ai-four-powers glm-security-audit; do
+  MISS=""
+  for d in ~/.claude/skills ~/.agents/skills ~/.zcode/skills ~/.codex/skills; do
+    [ -d "$d/$s" ] || MISS="$MISS $(basename $(dirname $d))"
+  done
+  [ -z "$MISS" ] && ok "自定义技能 $s 四端齐全" || warn "$s 缺于:$MISS"
+done
+
+echo "── 知识库完整性 ──"
+for f in ~/.claude/OPERATING-SYSTEM.md ~/.claude/registry.json ~/.claude/CLAUDE.md ~/.codex/AGENTS.md ~/ai-kb/KNOWLEDGE.md; do
+  [ -s "$f" ] && ok "$(echo $f | sed "s|$HOME|~|")" || bad "缺失: $f"
+done
+M=~/.claude/projects/C--Users-14676/memory
+echo "     记忆库: patterns $(find $M/patterns -type f 2>/dev/null | wc -l) / experience $(find $M/experience -type f 2>/dev/null | wc -l) / reference $(find $M/reference -type f 2>/dev/null | wc -l)"
+
+echo "── 本地代理 ──"
+netstat -an 2>/dev/null | grep -q "15721.*LISTEN" && ok "Clawd 代理 127.0.0.1:15721 在听" || warn "本地代理 15721 未监听(Claude 桌面链路可能未启动)"
+
+echo "════════ 体检结束 ════════"
