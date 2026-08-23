@@ -1,31 +1,42 @@
 # AI Skills
 
-四个即装即用的 agent skill:一个练人,一个练刀,一个管舰队,一个打交付。
+10 个单一职责的 agent skill,按三个能力域组织:能力域(用 AI 的内功)、交付域(从需求到上线的流程)、工程域(安全与多 Agent 基础设施)。
 
-## 🧠 ai-four-powers — 平民AI四力
+## 🧠 能力域 — 用 AI 的内功
 
-提问力、判断力、整合力、共情力。不需要懂代码和调参,用四种人类本能能力跑赢 90% 的AI使用者。内含话术模板、AI输出质检法、每日练习套餐。
+| Skill | 一句话 |
+|---|---|
+| `prompt-crafting` | 提问力:背景+任务+要求+格式,把模糊想法变成可执行指令 |
+| `ai-output-qa` | 判断力:三找不合理点 + 1-10 信任分,给 AI 输出做质检 |
+| `ai-integration` | 整合力:选、改、嵌三步,把 AI 产出拼进真实业务 |
+| `human-touch` | 共情力:最后一步加自己的故事,给 AI 内容去掉机器味 |
 
-## 🛡️ glm-security-audit — 安全审计流水线
+## 📦 交付域 — 从需求到上线
 
-基于 Trail of Bits 方法论的代码仓库审计 skill:先建心智模型再找漏洞,STRIDE 威胁建模,只报带证据的高置信发现,附变体分析与成熟度评分。
+| Skill | 一句话 |
+|---|---|
+| `requirement-xray` | 需求穿透:五连问 + 一页纸方案,动工前的防返工闸门 |
+| `ai-build-loop` | AI 协作交付:最小闭环→健壮性→测试→部署,四类工具检查清单 |
+| `demo-303030` | 演示与反馈:30秒痛点+30秒演示+30秒价值,反馈三问 |
+| `skill-compounding` | 沉淀复用:第三次出现即沉淀,下次交付从3天变3小时 |
 
-## 🚀 agent-fleet-ops — 三端 Agent 舰队运维
+## 🛠️ 工程域 — 基础设施
 
-连接本机 Claude Code / Codex / ZCode:统一知识库中枢(~/ai-kb)、ai-doctor 全链路体检、sync-skills 技能四端同步发布、CLAUDE.md/AGENTS.md 共享上下文接线。内置两个已验证脚本,新机器可一键重建整套体系。
+| Skill | 一句话 |
+|---|---|
+| `glm-security-audit` | Trail of Bits 方法论安全审计:心智模型→STRIDE→证据级发现→评分卡 |
+| `agent-fleet-ops` | 多 Agent 舰队运维:连接 Claude/Codex/ZCode,内置体检与同步脚本 |
 
-## 📦 ai-first-delivery — AI-First 端到端交付
-
-从"他说要什么"穿透到"他真正要解决什么":需求五连问 + 一页纸方案 → 指挥 AI 按"最小闭环→健壮性→测试→部署"顺序交付(覆盖运营自动化/定时脚本/对话bot/飞书企微bot/数据流水线)→ 30-30-30 演示法收反馈 → "第三次出现即沉淀"的复用机制。
+> 交付域四技能连起来就是一条完整的 AI-First 交付流水线:穿透需求 → 协作交付 → 演示反馈 → 沉淀复用。
 
 ## 安装
 
-复制对应文件夹到你的 skills 目录(如 `~/.agents/skills/` 或 `~/.zcode/skills/`):
-
 ```bash
 git clone https://github.com/Elysia60/ai-skills.git
-cp -r ai-skills/*/  ~/.agents/skills/
+cp -r ai-skills/*/ ~/.agents/skills/   # 复制全部;或只挑你需要的
 ```
+
+每个 skill 单一职责、独立可用,也可以按域组合成流水线使用。
 
 ## License
 
