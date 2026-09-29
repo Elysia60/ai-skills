@@ -9,7 +9,7 @@ import addon_utils
 
 def parse_args():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    opts = {"pmx": None, "vmd": None, "out": "//out", "seconds": 5.0, "water": True, "res": 1280, "fps": None}
+    opts = {"pmx": None, "vmd": None, "facevmd": None, "audio": None, "out": "//out", "seconds": 5.0, "water": True, "res": 1280, "fps": None}
     i = 0
     while i < len(argv):
         k = argv[i].lstrip("-")
@@ -49,8 +49,11 @@ def main():
     bpy.context.view_layer.objects.active = arm
     arm.name = "MMD_Model"
 
-    # 2) 导入 VMD 动作(作用于活动骨架)
+    # 2) 导入 VMD 动作(作用于活动骨架); 可选表情动作
     bpy.ops.mmd_tools.import_vmd(filepath=opts["vmd"])
+    if opts.get("facevmd"):
+        bpy.context.view_layer.objects.active = arm
+        bpy.ops.mmd_tools.import_vmd(filepath=opts["facevmd"])
 
     # 3) 动画范围
     fmin, fmax = 1, 2
@@ -144,6 +147,12 @@ def main():
     print("ENGINE:", scene.render.engine)
     bpy.ops.render.render(animation=True)
     print("RENDER_DONE:", scene.render.filepath)
+    if opts.get("audio"):
+        import subprocess
+        src = scene.render.filepath
+        dst = src.replace(".mp4", "_withmusic.mp4")
+        subprocess.run(["ffmpeg", "-y", "-i", src, "-i", opts["audio"], "-c:v", "copy", "-c:a", "aac", "-shortest", dst], check=True)
+        print("MUX_DONE:", dst)
 
 
 main()
