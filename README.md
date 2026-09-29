@@ -1,6 +1,6 @@
 # AI Skills
 
-11 个单一职责的 agent skill,按三个能力域组织:能力域(用 AI 的内功)、交付域(从需求到上线的流程)、工程域(安全与多 Agent 基础设施)。
+12 个单一职责的 agent skill,按三个能力域组织:能力域(用 AI 的内功)、交付域(从需求到上线的流程)、工程域(安全与多 Agent 基础设施)。
 
 ## 💡 理念 — 为什么这样分域
 
@@ -37,6 +37,7 @@ AI 泡沫时代的生存策略,三句话:
 |---|---|
 | `glm-security-audit` | Trail of Bits 方法论安全审计:心智模型→STRIDE→证据级发现→评分卡 |
 | `agent-fleet-ops` | 多 Agent 舰队运维:连接 Claude/Codex/ZCode,内置体检与同步脚本 |
+| `mmd-video-pipeline` | MMD出片力:PMX+VMD+夜景水面一键渲染,零手K出角色舞蹈视频 |
 
 > 交付域四技能连起来就是一条完整的 AI-First 交付流水线:穿透需求 → 协作交付 → 演示反馈 → 沉淀复用。
 
