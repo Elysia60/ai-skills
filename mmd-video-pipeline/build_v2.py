@@ -241,14 +241,11 @@ def main():
     cb = nt.nodes.new("CompositorNodeColorBalance")
     cb.correction_method = "LIFT_GAMMA_GAIN"
     # 夜蓝电影分级: 阴影偏蓝、高光微青
-    cb.lift = (0.88, 0.95, 1.10)
-    cb.gamma = (0.94, 1.0, 1.08)
-    cb.gain = (0.92, 1.0, 1.10)
+    cb.lift = (0.0, 0.006, 0.028)
+    cb.gamma = (0.97, 1.0, 1.05)
+    cb.gain = (0.96, 1.0, 1.08)
     con_node = nt.nodes.new("CompositorNodeBrightContrast")
-    try:
-        con_node.inputs[1].default_value = 0.12
-    except Exception:
-        pass
+
     comp = nt.nodes.new("CompositorNodeComposite")
     nt.links.new(rl.outputs[0], glare.inputs[0])
     nt.links.new(glare.outputs[0], cb.inputs[0])
