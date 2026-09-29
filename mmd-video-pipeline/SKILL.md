@@ -23,6 +23,18 @@ blender -b -P build_scene.py -- --pmx 模型.pmx --vmd 舞蹈.vmd --out 输出�
 
 首次使用先装 mmd_tools:从 [MMD-Blender/blender_mmd_tools](https://github.com/MMD-Blender/blender_mmd_tools/releases) 下载对应 Blender 版本的 zip,`blender --command extension install-file -r user_default xxx.zip` 安装。
 
+## v2 优化层(对照参考片的分镜+后期)
+
+`build_v2.py` 在基础管线上叠加五层电影感(2026-09-30 对照参考视频迭代):
+
+1. **合成器后期链**: Glare泛光 → 夜蓝 Lift/Gamma/Gain 分级 → 对比度, EEVEE 直出电影感
+2. **景深**: 相机 DOF 锁焦模型(光圈 f/2.8), 背景虚化
+3. **分镜运镜**: 4 景(特写推进/中景横移/低角广角/缓拉收尾), 景内线性缓动机位 + 硬切转场 + 镜头切换变焦
+4. **脚步涟漪**: 4 个相位错开的水环, 缩放扩散+透明渐隐循环
+5. **假光柱**: 斜置半透明锥体 mesh, 零体积开销出舞台氛围
+
+用法同 build_scene.py, 额外参数: `--facevmd`(表情动作) `--audio`(原曲自动混流)
+
 ## 执行规则
 
 1. 资产下载遇密码门 → 去发布视频(B站/YouTube)简介找提取码;视频里也没有就让用户登录模之屋账号取
