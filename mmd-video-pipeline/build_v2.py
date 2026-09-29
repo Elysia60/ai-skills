@@ -126,30 +126,6 @@ def main():
     ro.rotation_euler = (math.radians(-55), 0, math.radians(-140))
     scene.collection.objects.link(ro)
 
-    # ── 假光柱(斜置半透明长锥) ──
-    shaft_mat = bpy.data.materials.new("LightShaft")
-    shaft_mat.use_nodes = True
-    nt = shaft_mat.node_tree
-    nt.nodes.clear()
-    outn = nt.nodes.new("ShaderNodeOutputMaterial")
-    em = nt.nodes.new("ShaderNodeEmission")
-    em.inputs[0].default_value = (0.55, 0.72, 1.0, 1.0)
-    em.inputs[1].default_value = 1.6
-    trans = nt.nodes.new("ShaderNodeBsdfTransparent")
-    mix = nt.nodes.new("ShaderNodeMixShader")
-    mix.inputs[0].default_value = 0.92  # 92% 透明
-    nt.links.new(em.outputs[0], mix.inputs[1])
-    nt.links.new(trans.outputs[0], mix.inputs[2])
-    nt.links.new(mix.outputs[0], outn.inputs[0])
-    shaft_mat.blend_method = "BLEND"
-    for sx, sz, rot in ((-2.2, 1.2, 26), (1.8, 1.5, -18)):
-        bpy.ops.mesh.primitive_cone_add(vertices=16, radius1=0.7, radius2=1.9, depth=9,
-                                        location=(sx, 1.5, sz), rotation=(math.radians(rot + 68), 0, 0))
-        shaft = bpy.context.active_object
-        shaft.name = f"Shaft{sx}"
-        shaft.data.materials.append(shaft_mat)
-        shaft.visible_shadow = False
-
     # ── 脚步涟漪: 4 个相位错开的扩散环 ──
     for ri in range(4):
         bpy.ops.mesh.primitive_torus_add(major_radius=0.22, minor_radius=0.006,
