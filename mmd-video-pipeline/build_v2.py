@@ -234,10 +234,10 @@ def main():
     nt.nodes.clear()
     rl = nt.nodes.new("CompositorNodeRLayers")
     glare = nt.nodes.new("CompositorNodeGlare")
-    glare.glare_type = "BLOOM"
+    glare.glare_type = "FOG_GLOW"
     glare.quality = "MEDIUM"
-    glare.threshold = 1.0
-    glare.size = 8
+    glare.threshold = 1.1
+    glare.size = 7
     cb = nt.nodes.new("CompositorNodeColorBalance")
     cb.correction_method = "LIFT_GAMMA_GAIN"
     # 夜蓝电影分级: 阴影偏蓝、高光微青
@@ -254,6 +254,9 @@ def main():
 
     # ── 渲染 + 混流 ──
     scene.render.engine = "BLENDER_EEVEE_NEXT"
+    scene.view_settings.view_transform = "Standard"
+    scene.view_settings.look = "None"
+    scene.display_settings.display_device = "sRGB"
     scene.render.resolution_x = int(opts["res"])
     scene.render.resolution_y = int(opts["res"]) * 9 // 16
     scene.render.image_settings.file_format = "FFMPEG"
