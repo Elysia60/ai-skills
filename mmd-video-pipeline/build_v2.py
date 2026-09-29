@@ -245,13 +245,15 @@ def main():
     cb.gamma = (0.94, 1.0, 1.08)
     cb.gain = (0.92, 1.0, 1.10)
     con_node = nt.nodes.new("CompositorNodeBrightContrast")
-    con_node.inputs["Contrast"].default_value = 0.12
-    con_node.inputs["Bright"].default_value = 0.0
+    try:
+        con_node.inputs[1].default_value = 0.12
+    except Exception:
+        pass
     comp = nt.nodes.new("CompositorNodeComposite")
-    nt.links.new(rl.outputs["Image"], glare.inputs["Image"])
-    nt.links.new(glare.outputs["Image"], cb.inputs["Image"])
-    nt.links.new(cb.outputs["Image"], con_node.inputs["Image"])
-    nt.links.new(con_node.outputs["Color"], comp.inputs["Image"])
+    nt.links.new(rl.outputs[0], glare.inputs[0])
+    nt.links.new(glare.outputs[0], cb.inputs[0])
+    nt.links.new(cb.outputs[0], con_node.inputs[0])
+    nt.links.new(con_node.outputs[0], comp.inputs[0])
 
     # ── 渲染 + 混流 ──
     scene.render.engine = "BLENDER_EEVEE_NEXT"
