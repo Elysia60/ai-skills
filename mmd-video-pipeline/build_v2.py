@@ -244,12 +244,13 @@ def main():
     cb.lift = (0.88, 0.95, 1.10)
     cb.gamma = (0.94, 1.0, 1.08)
     cb.gain = (0.92, 1.0, 1.10)
-    con_node = nt.nodes.new("CompositorNodeContrast")
-    con_node.contrast = 1.12
+    con_node = nt.nodes.new("CompositorNodeBrightContrast")
+    con_node.inputs["Contrast"].default_value = 0.12
+    con_node.inputs["Bright"].default_value = 0.0
     comp = nt.nodes.new("CompositorNodeComposite")
     nt.links.new(rl.outputs["Image"], glare.inputs["Image"])
     nt.links.new(glare.outputs["Image"], cb.inputs["Image"])
-    nt.links.new(cb.outputs["Image"], con_node.inputs["Color"])
+    nt.links.new(cb.outputs["Image"], con_node.inputs["Image"])
     nt.links.new(con_node.outputs["Color"], comp.inputs["Image"])
 
     # ── 渲染 + 混流 ──
