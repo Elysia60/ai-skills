@@ -227,30 +227,8 @@ def main():
                     kp.interpolation = "CONSTANT"
     print("SHOTS:", len(shots))
 
-    # ── 合成器后期链: 泛光 + 夜蓝分级 ──
-    scene.use_nodes = True
-    scene.render.use_compositing = True
-    nt = scene.node_tree
-    nt.nodes.clear()
-    rl = nt.nodes.new("CompositorNodeRLayers")
-    glare = nt.nodes.new("CompositorNodeGlare")
-    glare.glare_type = "FOG_GLOW"
-    glare.quality = "MEDIUM"
-    glare.threshold = 1.1
-    glare.size = 7
-    cb = nt.nodes.new("CompositorNodeColorBalance")
-    cb.correction_method = "LIFT_GAMMA_GAIN"
-    # 夜蓝电影分级: 阴影偏蓝、高光微青
-    cb.lift = (0.0, 0.006, 0.028)
-    cb.gamma = (0.97, 1.0, 1.05)
-    cb.gain = (0.96, 1.0, 1.08)
-    con_node = nt.nodes.new("CompositorNodeBrightContrast")
-
-    comp = nt.nodes.new("CompositorNodeComposite")
-    nt.links.new(rl.outputs[0], glare.inputs[0])
-    nt.links.new(glare.outputs[0], cb.inputs[0])
-    nt.links.new(cb.outputs[0], con_node.inputs[0])
-    nt.links.new(con_node.outputs[0], comp.inputs[0])
+    # ── 后期改由 ffmpeg 链完成(泛光/调色/暗角), Blender 只出干净画面 ──
+    scene.use_nodes = False
 
     # ── 渲染 + 混流 ──
     scene.render.engine = "BLENDER_EEVEE_NEXT"
