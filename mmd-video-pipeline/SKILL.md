@@ -42,3 +42,13 @@ blender -b -P build_scene.py -- --pmx 模型.pmx --vmd 舞蹈.vmd --out 输出�
 3. 渲染黑屏/报 `hide` 属性错 → 确认删除了默认场景的 Cube/Light/Camera(build_scene.py 已内置清理)
 4. 想要参考视频的运镜 → 用姿态估计提取原视频骨架序列做相机轨迹,别凭空猜机位
 5. 出片后对照参考视频逐秒检查:模型穿模/悬空/比例,再迭代灯光与特效(泡沫波纹→粒子系统,第二期)
+
+## ffmpeg 后期链(泛光/调色/暗角/混流) — 冒烟验证参数
+
+```bash
+# 1) 泛光+分级+暗角 (先渲 10 帧样片调参, 再全量)
+ffmpeg -i base.mp4 -vf "split[a][b];[b]gblur=sigma=16[bl];[a][bl]blend=all_mode=screen:all_opacity=0.22,eq=contrast=1.05:saturation=1.06,colorbalance=bs=0.03:gs=0.02:bm=-0.02:rh=-0.02,vignette=PI/4.4" -c:v libx264 -crf 17 graded.mp4
+# 2) 混原曲
+ffmpeg -i graded.mp4 -i song.wav -c:v copy -c:a aac -shortest final.mp4
+```
+教训: Blender 4.2 默认 AgX 视图变换会把暗蓝场景去饱和压灰——夜景管线必须设 `view_transform="Standard"`; 合成器节点名 4.2 有变, 后期走 ffmpeg 更可验证。
