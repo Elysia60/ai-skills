@@ -41,13 +41,18 @@ def fetch(url, max_chars=8000):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    argv = sys.argv[1:]
+    if not argv or argv[0] in ("-h", "--help", "help"):
         print(__doc__)
+        sys.exit(0)
+    url = argv[0]
+    if not re.match(r"^https?://", url):
+        print(f"拒绝: {url!r} 不是 http(s) 网址——不向未知主机发起请求。")
+        print("用法: fetch_source.py <URL> [--max-chars N]   (--help 看研究规程)")
         sys.exit(2)
-    url = sys.argv[1]
     mc = 8000
-    if "--max-chars" in sys.argv:
-        mc = int(sys.argv[sys.argv.index("--max-chars") + 1])
+    if "--max-chars" in argv:
+        mc = int(argv[argv.index("--max-chars") + 1])
     try:
         print(fetch(url, mc))
     except Exception as e:
