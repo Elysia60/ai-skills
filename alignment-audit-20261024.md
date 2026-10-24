@@ -7,7 +7,7 @@
 
 | 层 | DSH 现状 | 2026-10 前沿 | 判定 | 本轮动作 |
 |---|---|---|---|---|
-| **工具协议** | MCP ×5 服务器（filesystem/fetch 等已恢复） | MCP = 工具层标准 | ✅ 对齐 | fetch 服务器修复（insert 语法） |
+| **工具协议** | MCP：web 5 条配置（3 启用+2 禁用）+ desktop 1 条 = **4 个实际在线**（10-24 DSH 侧复核纠偏，原报"×5"未扣 disabled 未分 profile——口径教训入账） | MCP = 工具层标准 | ✅ 对齐 | fetch 服务器修复（insert 语法） |
 | **技能格式** | SKILL.md 热冷分层，88 项 ×7 宿主桥接全绿 | Agent Skills 开放标准（SKILL.md 文件夹） | ✅ 对齐 | ledger-lessons 新技能入册 |
 | **A2A 互操作** | 记忆池+作者标记+任务卡（隐性协作） | A2A 规范 + Agent Card 显式发现 | ⚠️ 半对齐 | **新建 memories/agent-cards/AGENT-CARDS.md**——文件系统版 Agent Card，机器可读发现 |
 | **记忆** | FTS5 45 文件 + 作者分流 + 十题基准 10/10 | Letta 文件系统基准 / MemCube provenance | ⚠️ 半对齐 | 十题基准即自建闸门；公开基准对标列待办 |

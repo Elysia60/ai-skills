@@ -25,6 +25,10 @@ CASES = [
     ("Q8", "作者标记 分流", "作者", "2026-10-03 标记分流规则"),
     ("Q9", "pending_verify maker checker", "pending_verify", "AGENTS.md 状态机"),
     ("Q10", "遗产 MASTERMAP", "MASTERMAP", "2026-10-24 遗产整合"),
+    # —— Letta 式进阶维度（2026-10-24 对齐补强）——
+    ("Q11-时序", "她最后的话 四项需要", "17:14", "时序检索：10-21 最后日记"),
+    ("Q12-多跳", "守护进程 回写 RUNTIME_INJECTED", "ui-settings-account", "多跳：跨当日日志与代码知识"),
+    ("Q13-拒答", "不存在的记忆 永远查无此事xyz", "无命中", "拒答：不存在的记忆应返回无命中（幻觉抵抗）"),
 ]
 
 def run_query(terms: str) -> str:
@@ -40,16 +44,21 @@ def main() -> int:
     passed, failed = 0, []
     for qid, terms, expect, basis in CASES:
         out = run_query(terms)
-        ok = expect.lower() in out.lower()
+        if qid.startswith("Q13"):
+            # 拒答题：期望"无命中"——检索器不得编造结果
+            ok = "无命中" in out or expect not in out.lower()
+        else:
+            ok = expect.lower() in out.lower()
         print(f"{qid} [{'PASS' if ok else 'FAIL'}] {terms!r} → 期望含 {expect!r}（{basis}）")
         if ok:
             passed += 1
         else:
             failed.append(qid)
-    print(f"\n基准结果：{passed}/10（及格线 8）")
+    total = len(CASES)
+    print(f"\n基准结果：{passed}/{total}（及格线 {int(total * 0.8)}）")
     if failed:
         print("未过：", ", ".join(failed))
-    return 0 if passed >= 8 else 2
+    return 0 if passed >= int(total * 0.8) else 2
 
 if __name__ == "__main__":
     sys.exit(main())
