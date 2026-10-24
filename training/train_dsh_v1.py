@@ -69,12 +69,11 @@ def main():
     sft_rows = [{"text": f"<|im_start|>user\n{r['instruction']}<|im_end|>\n<|im_start|>assistant\n{r['output']}<|im_end|>"}
                 for r in load_jsonl(TRAIN / "sft_instructions.jsonl")]
     sft = Dataset.from_list(sft_rows)
-    strainer = SFTTrainer(model=model, tokenizer=tokenizer, train_dataset=sft,
-                          dataset_text_field="text",
+    strainer = SFTTrainer(model=model, processing_class=tokenizer, train_dataset=sft,
                           args=SFTConfig(output_dir=str(OUT / "sft"), per_device_train_batch_size=2,
                                          gradient_accumulation_steps=4, num_train_epochs=3, logging_steps=5,
-                                         learning_rate=2e-4, warmup_ratio=0.1, lr_scheduler_type="cosine",
-                                         save_strategy="no", report_to="none", max_seq_length=MAX_SEQ))
+                                         learning_rate=2e-4, warmup_steps=10, lr_scheduler_type="cosine",
+                                         save_strategy="no", report_to="none", max_length=MAX_SEQ, dataset_text_field="text"))
     strainer.train()
     print("SFT 完成")
 
@@ -83,11 +82,11 @@ def main():
                 for r in load_jsonl(TRAIN / "dpo_pairs_v1.jsonl") if r.get("rewritten")]
     dpo = Dataset.from_list(dpo_rows)
     dtrainer = DPOTrainer(model=model, ref_model=None,  # PEFT 下 ref=base 自动
-                          tokenizer=tokenizer, train_dataset=dpo,
+                          processing_class=tokenizer, train_dataset=dpo,
                           args=DPOConfig(output_dir=str(OUT / "dpo"), per_device_train_batch_size=2,
                                          gradient_accumulation_steps=4, num_train_epochs=3, logging_steps=5,
                                          learning_rate=5e-5, beta=0.1, save_strategy="no", report_to="none",
-                                         max_length=MAX_SEQ, max_prompt_length=256))
+                                         max_length=MAX_SEQ))
     dtrainer.train()
     print("DPO 完成")
 
