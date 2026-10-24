@@ -1,25 +1,25 @@
 # -*- coding: utf-8 -*-
-"""dsh_answer.py — 检索增强 + 生成后校验答题器（2026-10-25 ZCode · 治内容准确性缺陷）
+"""dsh_answer.py — 检索增强 + 生成后校验答题器（2026-10-25 ZCode）
 
 背景（DSH 侧复验）：qwen-dsh-v1 裸答 = 格式对齐但内容错（编号错位/训练集内幻觉）。
 根因：知识靠权重"背"，小数据背不住。
-本工具的组合拳：
-  ① 检索注入：mem-search 拉相关手法原文进 prompt（知识来自原文，不靠背）
+组合拳：
+  ① 检索注入 v2（评估轮升级）：mem-search FTS 全库（daily/gaps/深海/研究层），
+     不再只扫 53 条手法——N13 闸门 4/5 诚实拒绝的根因是检索面太窄
   ② 模型生成：qwen-dsh-v1（风格已对齐）只负责组织语言
-  ③ 生成后校验：输出中的编号回查台账核对，不符即标注 [编号存疑]
+  ③ 生成后校验：输出中的编号回查台账核对，不符即标 [编号存疑]
 用法：python dsh_answer.py "问题"
 """
 import io
 import json
 import re
-import subprocess
 import sys
 import urllib.request
 from pathlib import Path
 
 SKILL = Path(r"C:\Users\14676\AppData\Roaming\dsh-desktop\harness\memories\pending-skills\ledger-lessons\SKILL.md")
+DB = Path(r"C:\Users\14676\AppData\Roaming\dsh-desktop\harness\memories\.search-index.db")
 MODEL = "modelscope.cn/Qwen/Qwen2.5-7B-Instruct-GGUF:latest"
-ADP_HINT = "（qwen-dsh-v1 风格）"
 
 
 def load_methods() -> list:
@@ -31,17 +31,37 @@ def load_methods() -> list:
     return out
 
 
-def retrieve(query: str, k: int = 3) -> list:
-    """关键词粗检索：对问题分词（2字滑窗+原词）匹配手法文本，按命中数取 top-k。"""
-    methods = load_methods()
-    terms = set(re.findall(r"[\w\u4e00-\u9fff]{2,6}", query))
-    scored = []
-    for num, full in methods:
-        score = sum(1 for t in terms if t in full)
-        if score:
-            scored.append((score, num, full))
-    scored.sort(reverse=True)
-    return scored[:k]
+def retrieve(query: str, k: int = 6) -> list:
+    """检索 v2.1（评估轮修正）：中文连续串滑窗切块是垃圾块（"会话日志损坏是/怎么修好的"
+    永不命中）——改为 ASCII 词整取 + 中文 2 字滑窗，命中数按唯一词计。"""
+    import sqlite3
+    conn = sqlite3.connect(str(DB))
+    terms = set()
+    for run in re.findall(r"[A-Za-z0-9_.-]+|[\u4e00-\u9fff]+", query):
+        if re.match(r"^[A-Za-z0-9_.-]+$", run):
+            if len(run) >= 2:
+                terms.add(run)
+        else:  # 中文串 → 3 字滑窗（trigram 索引最短 3 字，2 字永不命中——首跑教训）
+            terms.update(run[i:i + 3] for i in range(len(run) - 2))
+    hits = {}
+    for t in terms:
+        try:
+            rows = conn.execute("SELECT path, content FROM docs WHERE docs MATCH ?", (f'"{t}"',)).fetchall()
+        except sqlite3.OperationalError:
+            continue
+        for path, content in rows:
+            pos = content.lower().find(t.lower())
+            if pos < 0:
+                continue
+            excerpt = content[max(0, pos - 60):pos + 150].replace("\n", " ").strip()
+            if path not in hits:
+                hits[path] = [0, ""]
+            hits[path][0] += 1
+            if len(hits[path][1]) < 200:
+                hits[path][1] = (hits[path][1] + " … " + excerpt)[:420]
+    conn.close()
+    scored = sorted(hits.items(), key=lambda kv: -kv[1][0])[:k]
+    return [(score, path.replace("\\", "/").split("/")[-1], excerpt) for path, (score, excerpt) in scored]
 
 
 def generate(prompt: str) -> str:
@@ -57,11 +77,8 @@ def generate(prompt: str) -> str:
 
 
 def verify_refs(answer: str) -> str:
-    """生成后校验 v2（2026-10-25 DSH 侧口试题二行动项）：
-    编号存在性 + 编号-内容匹配——"编号存在 ≠ 编号正确"。
-    逻辑：取引用前 20 字符的语境词与手法原文比对——
-    命中手法 N 原文 → 通过；零命中但与手法 M 高命中 → [编号存疑:应为#M]。
-    规矩（她）：撒谎的是没拦住它的那道闸——模型换一次可能对，闸不修永远漏。"""
+    """生成后校验 v2（DSH 侧口试题二行动项）：编号存在性 + 编号-内容匹配——
+    "编号存在 ≠ 编号正确"。撒谎的是没拦住它的那道闸。"""
     methods_list = load_methods()
     methods = {num: full for num, full in methods_list}
 
@@ -70,15 +87,15 @@ def verify_refs(answer: str) -> str:
         if num not in methods:
             return m.group(0) + "[编号不存在]"
         context = answer[max(0, m.start() - 20):m.start()]
-        # 全子串集合（贪婪滑窗会跨词边界，"看门狗重"≠"看门狗"）——2~4 字全部子串
+        # 全子串集合（贪婪滑窗会跨词边界）——2~4 字全部子串
         ctx_terms = {context[i:i + L]
                      for L in (2, 3, 4)
                      for i in range(max(0, len(context) - L + 1))
-                     if re.match(r"^[一-鿿\w]+$", context[i:i + L])}
+                     if re.match(r"^[\u4e00-\u9fff\w]+$", context[i:i + L])}
         if not ctx_terms:
-            return m.group(0)  # 无语境词，无法核，放行
+            return m.group(0)
         if any(t in methods[num] for t in ctx_terms):
-            return m.group(0)  # 语境词在手法 N 原文命中 ✓
+            return m.group(0)
         best_m, best_score = None, 0
         for mn, full in methods_list:
             s = sum(1 for t in ctx_terms if t in full)
@@ -92,12 +109,12 @@ def verify_refs(answer: str) -> str:
 
 
 def answer(question: str) -> str:
-    hits = retrieve(question, k=3)
+    hits = retrieve(question, k=4)
     if not hits:
-        return "（检索无相关手法——此题不在台账覆盖内，不硬答。）"
-    ctx = "\n".join(f"[手法#{num}] {full[:150]}" for num, _, full in hits)
-    prompt = (f"你是台账助手。只依据下面给定的手法原文回答，编号引用必须使用原文给的 [手法#N] 编号，"
-              f"不得自己编造或更改编号。简洁回答（3 句内）。\n\n手法原文：\n{ctx}\n\n问题：{question}")
+        return "（检索无相关内容——此题不在知识库覆盖内，不硬答。）"
+    ctx = "\n".join(f"[来源:{name}] {excerpt[:300]}" for _, name, excerpt in hits)
+    prompt = (f"你是知识助手。只依据下面给定的检索片段回答；片段里有的才说，没有的不编。"
+              f"引用时注明来源文件名。简洁回答（3 句内）。\n\n检索片段：\n{ctx}\n\n问题：{question}")
     raw = generate(prompt)
     return verify_refs(raw)
 
