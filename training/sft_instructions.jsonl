@@ -62,3 +62,13 @@
 {"instruction": "AI 生成的白底图抠图阈值怎么定？", "output": "纯白 floodfill thresh=0 即可；AI 白底带 ±1~2 噪声要 thresh≈8；前景里的白色靠「从边界灌」不被吃掉，再补贴透明的近白像素去光晕。", "source": "工作经验教训135条-第二批"}
 {"instruction": "看视频素材前先做什么？", "output": "先量测再采样：probe 跑全片（零 token）拿切点/冻结/静音/运动，再按骨架采样出图版；图版里的小字不可信，必须裁切放大读原图。", "source": "工作经验教训135条-第二批"}
 {"instruction": "经验知识四层为什么不能混层？", "output": "手法/原料/研究/档案的来源性质与过期策略不同：手法引用原料用编号指针不复制内容；研究报告与教训物理隔离。混层会让过期的东西冒充现行的。", "source": "工作经验教训135条-第二批"}
+{"instruction": "GitHub 上本地推理的首选工具是什么？", "output": "Ollama（约 179k 星，MIT 协议）：单命令安装、自动加载卸载模型、GPU 检测——本地 LLM 的生态默认答案。本机推理层就是它。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "ComfyUI 在 GitHub 的地位如何？", "output": "约 139.4k 星，已进 GitHub 史上总榜前 100（全球 #76）。它是节点式图像/视频生成工作流引擎，也是本机出图器官的底座。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "开源视频生成 2026 的头部模型有哪些？", "output": "Wan 2.1/2.2/3.0（阿里，VRAM 友好，走 ComfyUI）与 HunyuanVideo 1.5（腾讯，I2V 电影级）。AnimateDiff 已被 DiT 系取代。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "MMD 管线怎么接 AI 视频生成？", "output": "Wan/HunyuanVideo 都走 ComfyUI——出图器官装 Wan 节点即扩展成出视频器官；MMD 舞蹈帧 × 图生视频 = 全新成片形态。这是已勘察的直通路径。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "微调框架 LLaMA-Factory 和 Unsloth 怎么选？", "output": "LLaMA-Factory 覆盖最广（100+ 模型，SFT/DPO/KTO/ORPO 全家桶）适合当批量巩固引擎；Unsloth 单卡提速 2x、省 70% 显存，已支持 Windows 和 TTS 微调——适合 qwen-dsh-v1 增量训练。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "小数据 SFT 能给模型注入知识吗？", "output": "不能。64 条 SFT + 54 对 DPO 训 7B 只改变输出风格（格式对齐），压不过先验——实测编号错位、训练集内幻觉。知识注入走检索（mem-search），理解力靠更大模型。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "风格、知识、能力三层怎么分工？", "output": "风格走权重（QLoRA 已跑通）、知识走检索（mem-search + 检索注入答题器）、能力走更大模型（14B/key 决策项）。三层各司其职不混。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "Mem0 的基准争议说明了什么？", "output": "14M 下载的记忆层发布的 LoCoMo 基准被 Letta 质疑、Zep 称超它 24%——厂商自报数字必须待交叉，下载量不等于结论正确。这是双算法收敛规矩的行业级实证。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "评估一个新 GitHub 项目该看哪五维？", "output": "维护活跃、星标规模、部署难度、可复用功能、技术栈匹配（GitHub-first 五维）。裁决三档：在用/学习对象/跳过——不轻装，装一个不维护的东西违反只验定义不验名字的精神。", "source": "GitHub前100全景图-20261025"}
+{"instruction": "OpenClaw 是什么、为什么不用它？", "output": "250k+ 星的本地个人 AI 助手（Gateway 架构接消息渠道，13000+ 技能生态）。它的已知弱点恰是本机三项强项：记忆不可靠/不透明/凭据安全。不换，但吸收 Gateway 渠道解耦思想。", "source": "GitHub前100全景图-20261025"}
