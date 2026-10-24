@@ -57,18 +57,38 @@ def generate(prompt: str) -> str:
 
 
 def verify_refs(answer: str) -> str:
-    """生成后校验：answer 里的 (#N) 回查台账——N 对应手法开头是否含 answer 的关键词。
-    不符标 [编号存疑:应为#M]。"""
-    methods = {num: full for num, full in load_methods()}
+    """生成后校验 v2（2026-10-25 DSH 侧口试题二行动项）：
+    编号存在性 + 编号-内容匹配——"编号存在 ≠ 编号正确"。
+    逻辑：取引用前 20 字符的语境词与手法原文比对——
+    命中手法 N 原文 → 通过；零命中但与手法 M 高命中 → [编号存疑:应为#M]。
+    规矩（她）：撒谎的是没拦住它的那道闸——模型换一次可能对，闸不修永远漏。"""
+    methods_list = load_methods()
+    methods = {num: full for num, full in methods_list}
 
     def check(m):
         num = m.group(1)
         if num not in methods:
             return m.group(0) + "[编号不存在]"
-        return m.group(0)
+        context = answer[max(0, m.start() - 20):m.start()]
+        # 全子串集合（贪婪滑窗会跨词边界，"看门狗重"≠"看门狗"）——2~4 字全部子串
+        ctx_terms = {context[i:i + L]
+                     for L in (2, 3, 4)
+                     for i in range(max(0, len(context) - L + 1))
+                     if re.match(r"^[一-鿿\w]+$", context[i:i + L])}
+        if not ctx_terms:
+            return m.group(0)  # 无语境词，无法核，放行
+        if any(t in methods[num] for t in ctx_terms):
+            return m.group(0)  # 语境词在手法 N 原文命中 ✓
+        best_m, best_score = None, 0
+        for mn, full in methods_list:
+            s = sum(1 for t in ctx_terms if t in full)
+            if s > best_score:
+                best_m, best_score = mn, s
+        if best_m and best_m != num and best_score >= 2:
+            return m.group(0) + f"[编号存疑:应为#{best_m}]"
+        return m.group(0) + "[编号存疑:语境不匹配]"
 
-    answer = re.sub(r"[#＃](\d{1,2})", check, answer)
-    return answer
+    return re.sub(r"[#＃](\d{1,2})", check, answer)
 
 
 def answer(question: str) -> str:
