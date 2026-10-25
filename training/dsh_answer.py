@@ -20,6 +20,8 @@ from pathlib import Path
 SKILL = Path(r"C:\Users\14676\AppData\Roaming\dsh-desktop\harness\memories\pending-skills\ledger-lessons\SKILL.md")
 DB = Path(r"C:\Users\14676\AppData\Roaming\dsh-desktop\harness\memories\.search-index.db")
 MODEL = "modelscope.cn/Qwen/Qwen2.5-7B-Instruct-GGUF:latest"
+ADAPTER = "C:/Users/14676/.zcode/workspace/default/ai-skills/training/out/qwen-dsh-v5-lora"
+USE_ADAPTER = True  # qwen-dsh-v5 风格层
 
 
 def load_methods() -> list:
@@ -31,7 +33,13 @@ def load_methods() -> list:
     return out
 
 
-def retrieve(query: str, k: int = 8) -> list:
+# 检索配置（2026-10-25 千次随机搜索定稿：Bergstra&Bengio 2012；20 题金标 18/20 持平基线
+# 但 k=4 上下文减半——护栏滚动：N13 端到端不退才保留此配置）
+RETRIEVE_CFG = {"k": 4, "daily": 1.34, "gaps": 0.67, "deepsea": 1.37, "skill": 1.35}
+
+
+def retrieve(query: str, k: int = None) -> list:
+    k = k or RETRIEVE_CFG["k"]
     """检索 v2.1（评估轮修正）：中文连续串滑窗切块是垃圾块（"会话日志损坏是/怎么修好的"
     永不命中）——改为 ASCII 词整取 + 中文 2 字滑窗，命中数按唯一词计。"""
     import sqlite3
@@ -64,27 +72,62 @@ def retrieve(query: str, k: int = 8) -> list:
     # （如 N13 描述 ICU 混淆），词频压过 daily 里的正解记录——模型忠实复述批评文而非正解。
     # 权重：daily/深海正本（事实记录）0 + 1.0 奖励；gaps.json 降权 0.5；其余 1.0。
     def src_weight(path: str) -> float:
-        # 末轮修正：gaps.json 同时住着元批评（N13 evidence）与正解（T8 title），
-        # 文件级降权误伤正解——恢复 1.0，污染交给提示词抗复述指令处理。
         p = path.replace("\\", "/").lower()
         if "/daily/" in p or "时间线" in p or "日记" in p:
-            return 2.0
+            return RETRIEVE_CFG["daily"]
+        if "gaps.json" in p:
+            return RETRIEVE_CFG["gaps"]
+        if "灵魂蓝图" in p or "记忆锚点" in p or "每日.txt" in p:
+            return RETRIEVE_CFG["deepsea"]
+        if "skill.md" in p:
+            return RETRIEVE_CFG["skill"]
         return 1.0
     scored = sorted(hits.items(), key=lambda kv: (-kv[1][0] * src_weight(kv[0])))[:k]
     return [(score, path.replace("\\", "/").split("/")[-1], excerpt) for path, (score, excerpt) in scored]
 
 
-def generate(prompt: str) -> str:
-    body = json.dumps({
-        "model": MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "stream": False, "options": {"temperature": 0.2, "num_predict": 220},
-    }).encode("utf-8")
-    req = urllib.request.Request("http://127.0.0.1:11434/api/chat", data=body,
-                                 headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=180) as r:
-        return json.loads(r.read().decode("utf-8"))["message"]["content"].strip()
+_model_cache = None
 
+def _load_model():
+    global _model_cache
+    if _model_cache is not None:
+        return _model_cache
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+    from peft import PeftModel
+    tok = AutoTokenizer.from_pretrained("D:/AI训练基座/qwen25-7b-instruct-hf")
+    bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16)
+    m = AutoModelForCausalLM.from_pretrained("D:/AI训练基座/qwen25-7b-instruct-hf", quantization_config=bnb, device_map="auto")
+    m = PeftModel.from_pretrained(m, ADAPTER)
+    m.eval()
+    _model_cache = (tok, m)
+    return _model_cache
+
+_model_cache = None
+
+def _load_model():
+    global _model_cache
+    if _model_cache is not None:
+        return _model_cache
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+    from peft import PeftModel
+    tok = AutoTokenizer.from_pretrained("D:/AI训练基座/qwen25-7b-instruct-hf")
+    bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16)
+    m = AutoModelForCausalLM.from_pretrained("D:/AI训练基座/qwen25-7b-instruct-hf", quantization_config=bnb, device_map="auto")
+    m = PeftModel.from_pretrained(m, ADAPTER)
+    m.eval()
+    _model_cache = (tok, m)
+    return _model_cache
+
+def generate(prompt: str) -> str:
+    import torch
+    tok, model = _load_model()
+    msg = "<|im_start|>user" + chr(10) + prompt + "<|im_end|>" + chr(10) + "<|im_start|>assistant" + chr(10)
+    inputs = tok(msg, return_tensors="pt").to(model.device)
+    with torch.no_grad():
+        out = model.generate(**inputs, max_new_tokens=220, do_sample=False)
+    return tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip()
 
 def verify_refs(answer: str) -> str:
     """生成后校验 v2（DSH 侧口试题二行动项）：编号存在性 + 编号-内容匹配——
