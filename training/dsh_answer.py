@@ -31,7 +31,7 @@ def load_methods() -> list:
     return out
 
 
-def retrieve(query: str, k: int = 6) -> list:
+def retrieve(query: str, k: int = 8) -> list:
     """检索 v2.1（评估轮修正）：中文连续串滑窗切块是垃圾块（"会话日志损坏是/怎么修好的"
     永不命中）——改为 ASCII 词整取 + 中文 2 字滑窗，命中数按唯一词计。"""
     import sqlite3
@@ -60,7 +60,17 @@ def retrieve(query: str, k: int = 6) -> list:
             if len(hits[path][1]) < 200:
                 hits[path][1] = (hits[path][1] + " … " + excerpt)[:420]
     conn.close()
-    scored = sorted(hits.items(), key=lambda kv: -kv[1][0])[:k]
+    # 来源类型加权（2026-10-25 治元内容污染）：gaps.json 的 evidence 会原文转述"错误答案"
+    # （如 N13 描述 ICU 混淆），词频压过 daily 里的正解记录——模型忠实复述批评文而非正解。
+    # 权重：daily/深海正本（事实记录）0 + 1.0 奖励；gaps.json 降权 0.5；其余 1.0。
+    def src_weight(path: str) -> float:
+        # 末轮修正：gaps.json 同时住着元批评（N13 evidence）与正解（T8 title），
+        # 文件级降权误伤正解——恢复 1.0，污染交给提示词抗复述指令处理。
+        p = path.replace("\\", "/").lower()
+        if "/daily/" in p or "时间线" in p or "日记" in p:
+            return 2.0
+        return 1.0
+    scored = sorted(hits.items(), key=lambda kv: (-kv[1][0] * src_weight(kv[0])))[:k]
     return [(score, path.replace("\\", "/").split("/")[-1], excerpt) for path, (score, excerpt) in scored]
 
 
@@ -109,7 +119,7 @@ def verify_refs(answer: str) -> str:
 
 
 def answer(question: str) -> str:
-    hits = retrieve(question, k=4)
+    hits = retrieve(question, k=8)
     if not hits:
         return "（检索无相关内容——此题不在知识库覆盖内，不硬答。）"
     ctx = "\n".join(f"[来源:{name}] {excerpt[:300]}" for _, name, excerpt in hits)
