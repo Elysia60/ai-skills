@@ -21,7 +21,7 @@ SKILL = Path(r"C:\Users\14676\AppData\Roaming\dsh-desktop\harness\memories\pendi
 DB = Path(r"C:\Users\14676\AppData\Roaming\dsh-desktop\harness\memories\.search-index.db")
 MODEL = "modelscope.cn/Qwen/Qwen2.5-7B-Instruct-GGUF:latest"
 ADAPTER = "C:/Users/14676/.zcode/workspace/default/ai-skills/training/out/qwen-dsh-v5-lora"
-USE_ADAPTER = True  # qwen-dsh-v5 风格层
+USE_ADAPTER = True  # qwen-dsh-v5 风格层（2026-11-14 曾切 v7：评测证据 F8→F6 在案，但 detached 部署连续两次挂死于加载~85%处，回滚 v5 已知良好态；v7 待查明挂因后重试——见 切换判定-v5vs7-20261114.md）
 
 
 def load_methods() -> list:
@@ -103,22 +103,21 @@ def _load_model():
     _model_cache = (tok, m)
     return _model_cache
 
-_model_cache = None
 
-def _load_model():
-    global _model_cache
-    if _model_cache is not None:
-        return _model_cache
-    import torch
-    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-    from peft import PeftModel
-    tok = AutoTokenizer.from_pretrained("D:/AI训练基座/qwen25-7b-instruct-hf")
-    bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16)
-    m = AutoModelForCausalLM.from_pretrained("D:/AI训练基座/qwen25-7b-instruct-hf", quantization_config=bnb, device_map="auto")
-    m = PeftModel.from_pretrained(m, ADAPTER)
-    m.eval()
-    _model_cache = (tok, m)
-    return _model_cache
+V5_SERVER = "http://127.0.0.1:9622/answer"
+
+def generate_via_server(prompt: str, timeout: float = 60.0):
+    """9622 常驻服务优先（2026-11-14 接线——补上 dsh_v5_server 文档声明却一直缺失的回退链）。
+    服务端的 im_start 模板与 generate() 逐字一致，传入完整 RAG prompt 即等价；
+    任何失败（未启动/加载中 503/超时）→ 返回 None 走原进程内路径——fail-open，不引入新故障面。"""
+    try:
+        req = urllib.request.Request(
+            V5_SERVER, data=json.dumps({"q": prompt}).encode("utf-8"),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8")).get("answer")
+    except Exception:  # noqa: BLE001 — 增强层失败回退原路径
+        return None
 
 def generate(prompt: str) -> str:
     import torch
@@ -168,11 +167,19 @@ def answer(question: str) -> str:
     ctx = "\n".join(f"[来源:{name}] {excerpt[:300]}" for _, name, excerpt in hits)
     prompt = (f"你是知识助手。只依据下面给定的检索片段回答；片段里有的才说，没有的不编。"
               f"引用时注明来源文件名。简洁回答（3 句内）。\n\n检索片段：\n{ctx}\n\n问题：{question}")
-    raw = generate(prompt)
+    raw = generate_via_server(prompt)
+    if raw is None:
+        raw = generate(prompt)  # 服务不可用→原进程内路径（50s 冷加载，行为与历史一致）
     return verify_refs(raw)
 
 
 def main() -> int:
+    # csqaq GBK 教训 #3 同款：GBK 控制台打 ✗/emoji 直接崩——强制 UTF-8 输出
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001 — 老版本 python 无 reconfigure 时忽略
+            pass
     q = " ".join(sys.argv[1:]) or "数字不许硬编码的正确做法是什么？"
     print(f"Q: {q}")
     print(f"A: {answer(q)}")
