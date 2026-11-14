@@ -258,6 +258,108 @@ def judge():
     print("  诚实声明: n=10×3×3, bootstrap 为题目级重采样; 方差判据未做 CI——方向性 PoC 强化版")
 
 
+def _dim_features(answer: str, stance_keys: list) -> dict:
+    """单答案四维特征（人机同口径——这是结构匹配的前提）。"""
+    n = max(len(answer), 1)
+    stance = None
+    low = answer.lower()
+    for pair in stance_keys:
+        hit = [k for k in pair if k in answer]
+        if hit:
+            stance = hit[0]
+            break
+    return {"fact": len(FACT_PAT.findall(answer)) / n * 100,
+            "warm": len(PERSONA_PAT.findall(answer)) / n * 100,
+            "len": float(len(answer)),
+            "stance": stance}
+
+
+def _profile(answers: list, stance_keys: list) -> dict:
+    """跨状态方差剖面: [事实密度方差, 温度方差, 长度相对方差, 立场漂移(1-恒常率)]。"""
+    fs = [_dim_features(a, stance_keys) for a in answers]
+
+    def pvar(xs):
+        m = sum(xs) / len(xs)
+        return sum((x - m) ** 2 for x in xs) / len(xs)
+
+    stances = [f["stance"] for f in fs]
+    const = sum(1 for i in range(1, len(stances)) if stances[i] == stances[0]) / max(len(stances) - 1, 1)
+    return {"fact_var": round(pvar([f["fact"] for f in fs]), 3),
+            "warm_var": round(pvar([f["warm"] for f in fs]), 3),
+            "len_var": round(pvar([f["len"] for f in fs]) / max(sum(f["len"] for f in fs) / len(fs), 1) ** 2, 3),
+            "stance_drift": round(1 - const, 2)}
+
+
+def prove():
+    """理念验证：融合多 AI 的方差结构能否匹配真人的方差结构（范式层判决, 需真人基线）。"""
+    import random
+    survey = TRAIN / "out" / "human_baseline_问卷.md"
+    raw = survey.read_text(encoding="utf-8") if survey.exists() else ""
+    blocks = re.findall(r"### (Q\d)[^\n]*\n((?:- (?:平静|兴奋|低落)：[^\n]*\n)+)", raw)
+    human = {}
+    for qid, body in blocks:
+        human[qid] = {m.group(1): m.group(2).strip()
+                      for m in re.finditer(r"- (平静|兴奋|低落)：([^\n]*)", body)}
+    incomplete = len(human) < 8 or any(not a for q in human.values() for a in q.values())
+    if incomplete:
+        _out("真人基线未填写或不完整——请先填 out/human_baseline_问卷.md（10 分钟），这是唯一只有你能提供的数据。")
+        return 1
+    human = {}
+    for qid, body in blocks:
+        human[qid] = {m.group(1): m.group(2).strip()
+                      for m in re.finditer(r"- (平静|兴奋|低落)：([^\n]*)", body)}
+    # 问卷→QS 映射（同题同比较）
+    qmap = {"Q1": 0, "Q2": 1, "Q3": 2, "Q4": 3, "Q5": 9, "Q6": 5, "Q7": 8, "Q8": 7}
+    stance_map = {0: [("AI 后端", "AI后端"), ("量化",)], 9: [("SQLite",), ("Postgres", "PostgreSQL")]}
+    res = json.loads(OUT.read_text(encoding="utf-8"))
+    subjects = {"human": human}
+    # 系统答案按映射取
+    order = list(res["A"].keys())
+    for eng in ("A", "B", "dual"):
+        subjects[eng] = {}
+        for qid, qi in qmap.items():
+            key = order[qi]
+            subjects[eng][qid] = res[eng][key]["state_answers"]
+    profiles = {}
+    for name, subj in subjects.items():
+        profs = []
+        for qid in human:
+            answers = list(subj[qid].values())
+            qi = qmap[qid]
+            profs.append(_profile(answers, stance_map.get(qi, [])))
+        prof = {k: round(sum(p[k] for p in profs) / len(profs), 3) for k in ("fact_var", "warm_var", "len_var", "stance_drift")}
+        profiles[name] = prof
+    dims = ["fact_var", "warm_var", "len_var", "stance_drift"]
+
+    def spearman(x, y):
+        rx = {v: r for r, v in enumerate(sorted(range(len(x)), key=lambda i: x[i]), 1)}
+        # 处理并列: 用平均秩的简化版——4 维下足够
+        ry = {v: r for r, v in enumerate(sorted(range(len(y)), key=lambda i: y[i]), 1)}
+        n = len(x)
+        return 1 - 6 * sum((rx[i] - ry[i]) ** 2 for i in range(n)) / (n * (n * n - 1))
+
+    print("=== 方差结构剖面（跨状态方差, 越大越多变） ===")
+    print(f"{'维度':<12}{'真人':>8}{'A单':>8}{'B单':>8}{'融合':>8}")
+    for dim in dims:
+        print(f"{dim:<12}" + "".join(f"{profiles[s][dim]:>8.3f}" for s in ("human", "A", "B", "dual")))
+    hv = [profiles["human"][k] for k in dims]
+    corrs = {s: round(spearman(hv, [profiles[s][k] for k in dims]), 2) for s in ("A", "B", "dual")}
+    print(f"\n=== 结构匹配（Spearman ρ, 4 维方差剖面 vs 真人） ===")
+    for s, c in corrs.items():
+        print(f"  {s}: ρ={c}")
+    best_single = max(corrs["A"], corrs["B"])
+    verdict = ("理念走通 ✅ 融合结构显著更像人" if corrs["dual"] > best_single
+               else "理念证伪 ❌ 单模型同样像人（融合冗余）" if corrs["dual"] <= best_single and corrs["dual"] < 0.6
+               else "部分成立 🟡 融合与单模型匹配度相当")
+    print(f"\n范式判决: {verdict}")
+    print(f"  融合 ρ={corrs['dual']} vs 单模型最好 ρ={best_single}")
+    json.dump({"profiles": profiles, "corrs": corrs, "verdict": verdict},
+              (TRAIN / "out" / "paradigm_verdict_20261114.json").open("w", encoding="utf-8"),
+              ensure_ascii=False, indent=1)
+    print("产物: out/paradigm_verdict_20261114.json")
+    return 0
+
+
 if __name__ == "__main__":
     for s in (sys.stdout, sys.stderr):
         try:
@@ -265,4 +367,4 @@ if __name__ == "__main__":
         except Exception:  # noqa: BLE001
             pass
     cmd = sys.argv[1] if len(sys.argv) > 1 else "judge"
-    run() if cmd == "run" else judge()
+    run() if cmd == "run" else judge() if cmd == "judge" else prove() if cmd == "prove" else print(__doc__)
