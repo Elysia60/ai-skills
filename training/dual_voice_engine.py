@@ -30,6 +30,15 @@ TRAIN = Path(__file__).resolve().parent
 OUT = TRAIN / "out" / "dual_voice_answers_v4_20261114.json"
 BLUEPRINT = TRAIN / "merge_dryrun" / "灵魂蓝图.并入预演.txt"
 
+
+def _out(s: str):
+    for st in (sys.stdout, sys.stderr):
+        try:
+            st.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+    print(s)
+
 OLLAMA = "http://localhost:11434"
 VOICE_A_MODEL = "modelscope.cn/Qwen/Qwen2.5-7B-Instruct-GGUF:latest"  # 陪伴声部(人格卡)
 VOICE_B_MODEL = "qwen3:8b"                                            # 理性声部(工作模式)
