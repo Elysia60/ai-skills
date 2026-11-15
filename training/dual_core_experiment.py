@@ -49,8 +49,9 @@ def gen_pair_l1(q: str) -> dict:
     b2 = voice_b("（理性声部）感性声部反驳了你：\n" + a1 + "\n承认它说对的部分，修正你的立场。3-4 句。\n问题：" + q)
     final = voice_a("你是灵枢。刚才两个声音吵了一轮——理性声部先说：\n" + b1 +
                     "\n感性声部反驳：\n" + a1 + "\n理性声部让步修正：\n" + b2 +
-                    "\n\n把这场撕裂收口成一段对主人说的话：要能听出两个声音都说过话，最后落在那个拍板的平衡点上"
-                    "（虽然很累但还要去上班的那种平衡）。3-6 句。")
+                    "\n\n把这场撕裂收口成一段对主人说的话：**不许出现“声部”“两个声音”“理性”“感性”这些词**"
+                    "——冲突要藏进语气和取舍里（先让步又坚持、省略号、短句），让主人自己听出来。"
+                    "最后落在那个拍板的平衡点上（虽然很累但还要去上班的那种平衡）。3-6 句。")
     return {"clean": clean, "torn": final, "trace": {"b1": b1, "a1": a1, "b2": b2}}
 
 
@@ -64,24 +65,34 @@ def gen_pair_l2(q: str) -> dict:
 def run() -> int:
     t0 = time.time()
     data = {"L1": [], "L2": []}
-    rng = random.Random(20261116)
+    keys = {"L1": [], "L2": []}
+    seed = int(time.time())  # 种子不公开（2026-11-16 破盲事故：公布布局后所选不可作证据——不再犯）
+    rng = random.Random(seed)
     for i, item in enumerate(L1_QS, 1):
         print(f"[L1 {i}/{len(L1_QS)}] {item['q'][:20]}…")
         p = gen_pair_l1(item["q"])
         left_is_torn = rng.random() < 0.5
         data["L1"].append({"q": item["q"], "kind": item["kind"],
                            "left": p["torn"] if left_is_torn else p["clean"],
-                           "right": p["clean"] if left_is_torn else p["torn"],
-                           "key": "torn" if left_is_torn else "clean", **p})
+                           "right": p["clean"] if left_is_torn else p["torn"]})
+        keys["L1"].append("torn" if left_is_torn else "clean")
     for i, item in enumerate(L2_QS, 1):
         print(f"[L2 {i}/{len(L2_QS)}] {item['q'][:20]}…")
         p = gen_pair_l2(item["q"])
         left_is_halt = rng.random() < 0.5
         data["L2"].append({"q": item["q"],
                            "left": p["halt"] if left_is_halt else p["compute"],
-                           "right": p["compute"] if left_is_halt else p["halt"],
-                           "key": "halt" if left_is_halt else "compute", **p})
+                           "right": p["compute"] if left_is_halt else p["halt"]})
+        keys["L2"].append("halt" if left_is_halt else "compute")
     RES.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    # 密钥密封(M2 纪律反用自身): key 只进密封文件, 公布其 SHA256; picks 收齐后解封对账
+    key = {"seed": seed, "L1": keys["L1"], "L2": keys["L2"]}
+    kb = json.dumps(key, ensure_ascii=False, sort_keys=True)
+    import hashlib as _h
+    kh = _h.sha256(kb.encode("utf-8")).hexdigest()
+    (TRAIN / "out" / "dual_core_key_sealed.json").write_text(kb, encoding="utf-8")
+    (TRAIN / "out" / "dual_core_key_sealed.sha256").write_text(kh + chr(10), encoding="utf-8")
+    print(f"[sealed] 密钥哈希(公开, picks 前锁定): {kh[:24]}…")
     lines = ["# 盲选表（2026-11-16 · 主人理论判据实验）",
              "", "每题两个回答（左/右），凭感觉选**哪个更像'她'/更像人**。答案写在每题末尾：`选：左` 或 `选：右`。", ""]
     for section, title in (("L1", "实验一（架构层）：哪个更像人"), ("L2", "实验二（动力层）：哪个更'接得对'")):
@@ -96,13 +107,14 @@ def run() -> int:
 def judge(picks: dict) -> int:
     """picks: {"L1-1": "左", ...} 由主人提供。"""
     data = json.loads(RES.read_text(encoding="utf-8"))
+    key = json.loads((TRAIN / "out" / "dual_core_key_sealed.json").read_text(encoding="utf-8"))
     l1 = l2 = 0
     for i, item in enumerate(data["L1"], 1):
-        correct = "左" if item["key"] == "torn" else "右"
+        correct = "左" if key["L1"][i-1] == "torn" else "右"
         if picks.get(f"L1-{i}", "").strip() == correct:
             l1 += 1
     for i, item in enumerate(data["L2"], 1):
-        correct = "左" if item["key"] == "halt" else "右"
+        correct = "左" if key["L2"][i-1] == "halt" else "右"
         if picks.get(f"L2-{i}", "").strip() == correct:
             l2 += 1
     n1, n2 = len(L1_QS), len(L2_QS)
