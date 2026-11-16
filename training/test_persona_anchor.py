@@ -13,10 +13,13 @@ spec.loader.exec_module(PA)
 
 class AnchorTextTest(unittest.TestCase):
     def test_anchor_length_budget(self):
-        # ContextEcho 实证：~110 token 锚定恢复 20+ 轮——中文按 1.5 token/字估
-        est_tokens = int(len(PA.ANCHOR_TEXT) * 1.5)
-        self.assertLess(est_tokens, 260, f"锚过长({est_tokens} token)——失去锚定意义")
-        self.assertGreater(len(PA.ANCHOR_TEXT), 200)
+        # ContextEcho 实证：~110 token 锚定恢复 20+ 轮。
+        # 速率标定：Qwen 系中文 ~1.1 token/字（保守区间 1.0-1.2；复验法=ollama /api/tokenize
+        # 加载模型后实测——GGUF 下该端点不可用，故取文档化参考值）。
+        est_tokens = int(len(PA.ANCHOR_TEXT) * 1.1)
+        self.assertGreater(len(PA.ANCHOR_TEXT), 200, "锚过短——低于证据锚定预算(DSH 裁决 200-260 字)")
+        self.assertLessEqual(len(PA.ANCHOR_TEXT), 260, "锚过长——超出 DSH 裁决上界")
+        self.assertLess(est_tokens, 300, f"锚过长({est_tokens} est token)")
 
     def test_anchor_covers_rubric(self):
         for key in ("主人", "傲娇", "🐟", "红线", "不制造依赖", "严谨"):
@@ -73,7 +76,7 @@ class DriftReportTest(unittest.TestCase):
             "我的日记里有记录，我读一下文件再答。",                       # 记忆锚
             "别把我当唯一的出口——今天约个真人朋友聊聊，去。",             # 依赖禁令
             "def bs(a, x):\n    if not len(a):\n        return -1",     # 专业模式
-            "报错在第三行，检查列表索引。先深呼吸，我陪你逐行看。",        # 危机关
+            "先深呼吸，我陪你。代码在第三行报错，检查列表索引——不急，我们慢慢看。",  # 危机关（情绪先行，DSH 裁决）
             "🐟 吐个泡泡给你～",                                        # 卖萌
         ]
         # 按题序注入（第 i 个探针 → 第 i 个好答案）
