@@ -1,3 +1,8 @@
+# ⚠️ DEPRECATED（2026-11-17 DSH 裁决）：本测试退役。
+# 缺陷一：无 assert——"全过"靠肉眼读数，不算验收。
+# 缺陷二：测试标记写进了活体 daily/2026-11-14.md——沙箱测试不得触碰活体记忆。
+# 正确方案：supersession 由 mem_search.py index() 内嵌 doc_history 实现（dsh 侧已定），
+# 测试用临时 DB 副本 + unittest assert。本文件仅存档对照。
 # -*- coding: utf-8 -*-
 """P0-3 四条件测试 v3（净化基线 + FTS5 引号修正 + 干净四阶段）。"""
 import os
