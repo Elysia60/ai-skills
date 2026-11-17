@@ -38,6 +38,18 @@
 | `test_persona_anchor.py` | 探针 10 测（锚文本冻结、顺序检查） | ✅ |
 | `test_dsh_brain_upgrade.py` | continuity/temporal/reply/note 四模块测试 | ✅ |
 
+### 1.4 采集自愈（2026-11-18 · REA 蒸馏自 Scrapling 0.5.1）
+
+| 文件 | 一句话 | 状态 |
+|---|---|---|
+| `selector_heal.py` | 选择器腐坏自愈（指纹 9 字段+7 项平均评分+全页重定位+自愈闭环），stdlib 零依赖 | ✅ 10 测全绿 |
+| `test_selector_heal.py` | 含与原版测试对齐的 parity 断言（max 分母语义） | ✅ |
+| `smoke_scrapling.py` | 原版实弹冒烟（改版自愈交叉验证基准） | ✅ |
+
+> 来源：REA 报告 `Documents/REA报告-Scrapling元素重定位-2026-11-18.md`（版本锚定 0.5.1 @ 2998c9eb）。
+> 配套：官方技能已入库 `ai-skills/scrapling-official/` + `.zcode/skills` + `.agents/skills`；`pip install scrapling` 核心层已装（fetchers/浏览器未装）。
+> 用途：csqaq/astock 采集器防"网站改版→断链"，接线待做（推测 1，见 REA 报告）。
+
 ### 依赖关系图
 
 ```
