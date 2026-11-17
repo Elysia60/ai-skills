@@ -126,6 +126,18 @@ class SidecarHandler(BaseHTTPRequestHandler):
                 _stats["errors"] += 1
                 _log({"endpoint": "validate", "error": str(e)})
                 self._json_response({"error": str(e)}, 500)
+        elif self.path == "/crisis":
+            engine.set_crisis()
+            engine.save()
+            _log({"endpoint": "crisis", "action": "set"})
+            self._json_response({"crisis": True, "mode": engine.style_directives()["mode"]})
+
+        elif self.path == "/clear-crisis":
+            engine.clear_crisis()
+            engine.save()
+            _log({"endpoint": "clear-crisis", "action": "cleared"})
+            self._json_response({"crisis": False, "state": dict(engine.state)})
+
         else:
             self._json_response({"error": "unknown path"}, 404)
 

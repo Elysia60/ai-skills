@@ -156,10 +156,12 @@ class EmotionEngine:
     # ── 交互移位 ──
     def apply_event(self, valence: float = 0.0, arousal: float = 0.0,
                     dominance: float = 0.0, source: str = "") -> None:
-        """一轮交互的状态移位。valence/arousal ∈ [-1,1]。"""
+        """一轮交互的状态移位。valence/arousal ∈ [-1,1]。
+        移位后自动检测 Cusp 突跳（主人理论：双核竞争→突跳→翻转）。"""
         self.decay_if_stale()
         self.state.shift({"P": valence * 0.3, "A": arousal * 0.3, "D": dominance * 0.1})
         self.updated_at = time.time()
+        self.check_cusp()  # 移位后自动检测突跳（主人理论：双核竞争→翻转）
 
     # ── 危机置位（蓝图绝对红线：傲娇全关） ──
     def set_crisis(self) -> None:
