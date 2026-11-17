@@ -1,0 +1,24 @@
+{
+ "date": "2026-10-27",
+ "tool": "knowledge_quiz_e2e.py (v2 评分 + R20 锚强化)",
+ "runs": [
+  {
+   "run": 1,
+   "keyword": "1P/3Pt/1F",
+   "note": "Q5 得例句（检索选例话块）"
+  },
+  {
+   "run": 2,
+   "keyword": "1P/3Pt/1F",
+   "note": "Q5 双通道 PASS（实例示范）；Q4 选段变为出处纪律条"
+  },
+  {
+   "run": 3,
+   "keyword": "2P/1Pt/2F",
+   "note": "锚强化后 Q5 FAIL→PASS 3/3（处方段主导）；方差转移至 Q1/Q4（选中其他正确段落）"
+  }
+ ],
+ "cross_run": "5 域全部至少一次实质正确作答；0 幻觉跨三轮稳定；单轮评分受 top-k 选段方差支配——跨次累计+按域统计才是正确口径",
+ "verdict": "R15 优化项闭环（锚强化实测有效）；选段方差的根治属 dsh_answer R&D（k 值/路由/按域聚合），她的层",
+ "queued_improvement": "quiz 脚本判定阈值需支持跨次聚合（维护模式备注，不急）"
+}

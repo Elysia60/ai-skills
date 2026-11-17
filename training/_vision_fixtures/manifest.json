@@ -1,0 +1,29 @@
+{
+ "date": "2026-11-02",
+ "fixtures": [
+  {
+   "file": "doc_table.png",
+   "type": "文档表格",
+   "expect_ocr": [
+    "C1",
+    "DSR=0.222",
+    "OOS=-0.490"
+   ]
+  },
+  {
+   "file": "err_dialog.png",
+   "type": "报错弹窗",
+   "expect_ocr": [
+    "exit_code=-1073741819"
+   ]
+  },
+  {
+   "file": "doc_table_tampered.png",
+   "type": "篡改对照",
+   "expect_ocr": [
+    "OOS=+0.490"
+   ],
+   "note": "C9 负号被偷换——先验劫持 6.5 的靶子：目测几乎不可见，机器必须抓到"
+  }
+ ]
+}
