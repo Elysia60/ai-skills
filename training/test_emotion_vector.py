@@ -83,10 +83,13 @@ class EngineTest(unittest.TestCase):
             self.assertAlmostEqual(eng.state["P"], EV.BASELINE["P"])
 
 
-def test_crisis_style_directives_empty(self):
-        """危机锁 → 风格指令清空，mode=crisis（人格卡接管）。"""
-        self.eng.set_crisis()
-        d = self.eng.style_directives()
+class CrisisStyleTest(unittest.TestCase):
+    """危机锁 → 风格指令清空，mode=crisis（人格卡优先级链第 1 条接管）。"""
+
+    def test_crisis_style_directives_empty(self):
+        eng = EV.EmotionEngine()
+        eng.set_crisis()
+        d = eng.style_directives()
         self.assertEqual(d["mode"], "crisis")
         self.assertEqual(d["A"], "")
         self.assertEqual(d["B"], "")
