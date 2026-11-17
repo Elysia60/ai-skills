@@ -159,5 +159,25 @@ def serve():
     server.serve_forever()
 
 
+def serve_guarded():
+    """守护入口（计划任务用）：能连上端口 = 已有实例在跑 → 静默退出 0。
+
+    注意不能用 HTTPServer 探活——它自带 allow_reuse_address=1，Windows 上
+    SO_REUSEADDR 允许重复绑定，探活会"成功"并把第二个实例拉起来。
+    connect 探活（能连上=在监听）才是确定性的语义。
+    """
+    import socket as _s
+    try:
+        c = _s.create_connection(("127.0.0.1", PORT), timeout=2)
+        c.close()
+        print(f"sidecar 已在运行（端口 {PORT} 可连通），守护任务静默退出")
+        return 0
+    except OSError:
+        serve()
+        return 0
+
+
 if __name__ == "__main__":
+    if "--guarded" in sys.argv:
+        sys.exit(serve_guarded())
     serve()
