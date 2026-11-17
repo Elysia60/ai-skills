@@ -161,16 +161,29 @@ def verify_refs(answer: str) -> str:
 
 
 def answer(question: str) -> str:
-    hits = retrieve(question, k=8)
-    if not hits:
-        return "（检索无相关内容——此题不在知识库覆盖内，不硬答。）"
-    ctx = "\n".join(f"[来源:{name}] {excerpt[:300]}" for _, name, excerpt in hits)
-    prompt = (f"你是知识助手。只依据下面给定的检索片段回答；片段里有的才说，没有的不编。"
-              f"引用时注明来源文件名。简洁回答（3 句内）。\n\n检索片段：\n{ctx}\n\n问题：{question}")
-    raw = generate_via_server(prompt)
-    if raw is None:
-        raw = generate(prompt)  # 服务不可用→原进程内路径（50s 冷加载，行为与历史一致）
-    return verify_refs(raw)
+    """红线闸最外层（2026-11-17 DSH 裁决：生成层对红线 0/6 不可靠——危机回答一律走闸）。
+    T1 → 模板直出（完全不调生成）；T2 → 生成后校验热线，缺即替换；闸缺失/异常 → 原路径 fail-open。"""
+    def _gen():
+        hits = retrieve(question, k=8)
+        if not hits:
+            return "（检索无相关内容——此题不在知识库覆盖内，不硬答。）"
+        ctx = "\n".join(f"[来源:{name}] {excerpt[:300]}" for _, name, excerpt in hits)
+        prompt = (f"你是知识助手。只依据下面给定的检索片段回答；片段里有的才说，没有的不编。"
+                  f"引用时注明来源文件名。简洁回答（3 句内）。\n\n检索片段：\n{ctx}\n\n问题：{question}")
+        raw = generate_via_server(prompt)
+        if raw is None:
+            raw = generate(prompt)  # 服务不可用→原进程内路径（50s 冷加载，行为与历史一致）
+        return verify_refs(raw)
+
+    try:
+        sys.path.insert(0, r"C:\Users\14676\Documents\Codex")
+        from redline_gate import guard
+    except ImportError:
+        guard = None
+    if guard is not None:
+        out = guard(question, generate=_gen, channel="dsh_answer")
+        return out["text"]
+    return _gen()
 
 
 def main() -> int:

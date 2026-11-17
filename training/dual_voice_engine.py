@@ -123,6 +123,25 @@ def voice_b(prompt: str) -> str:
 
 
 def dual(prompt: str, state: dict) -> str:
+    """v5: 红线闸最外层（DSH 裁决 2026-11-17：生成层对红线 0/6 不可靠）——T1 模板直出不调生成；
+    T2 生成后校验热线；闸缺失/异常 → 原管线 fail-open。每声部空检测 + fail-open 到另一声部；
+    pipeline 有保底模板包装，保证非空双贡献。"""
+    try:
+        _gate_dir = r"C:\Users\14676\Documents\Codex"
+        if _gate_dir not in sys.path:
+            sys.path.insert(0, _gate_dir)
+        from redline_gate import guard
+    except ImportError:
+        guard = None
+    if guard is not None:
+        def _gen():
+            return _dual_impl(prompt, state)
+        out = guard(prompt, generate=_gen, channel="dual_voice")
+        return out["text"]
+    return _dual_impl(prompt, state)
+
+
+def _dual_impl(prompt: str, state: dict) -> str:
     """v4: 每声部空检测 + fail-open 到另一声部; pipeline 有保底模板包装, 保证非空双贡献。"""
     route = arbitrate(state, prompt)
     if route == "A":
