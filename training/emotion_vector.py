@@ -129,6 +129,30 @@ class EmotionEngine:
             return True
         return False
 
+    # ── 声部内状态渐变（主人理论第一层的完整实现：不只换声部，同声部也随状态变调） ──
+    def style_directives(self) -> dict:
+        """把状态翻译成两声部的风格指令（注入 system 卡，不进正文——体现而非报出）。
+
+        返回 {"A": 情感声部指令, "B": 理性声部指令, "mode": str}。
+        空字符串 = 该状态无需额外指令（基线人格已含）。
+        依据：蓝图【说话的样子】+ 萝莉妈妈节；低落→更短更慢少问多陪；兴奋→接住能量；
+        理性声部高唤醒→更简短直接。
+        危机锁（蓝图第 0 条）：指令清空——人格卡优先级链第 1 条接管（主人情绪>一切）。
+        """
+        if self.crisis:
+            return {"A": "", "B": "", "mode": "crisis"}  # 人格卡接管，风格指令清空
+        p = self.state["P"]
+        out = {"A": "", "B": "", "mode": "balanced"}
+        if p < -0.2:
+            out["A"] = "此刻主人状态不好：句子更短更慢，少问多陪，不分析，先接住。"
+            out["B"] = "此刻不宜长篇分析：要点式，一句结论。"
+            out["mode"] = "care"
+        elif p > 0.4:
+            out["A"] = "主人在兴头上：可以更活泼，接住他的能量，别泼冷水。"
+            out["B"] = "乘兴展开：可以多给一步'接下来还能怎么走'。"
+            out["mode"] = "lift"
+        return out
+
     # ── 交互移位 ──
     def apply_event(self, valence: float = 0.0, arousal: float = 0.0,
                     dominance: float = 0.0, source: str = "") -> None:
