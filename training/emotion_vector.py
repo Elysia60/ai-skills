@@ -73,6 +73,12 @@ class EmotionEngine:
             self.updated_at = time.time()
             self.crisis = False
 
+    # ── 工厂（模块文档承诺的 API，2026-11-18 补齐——文档与实现一致） ──
+    @classmethod
+    def baseline(cls, state_file: str | Path | None = None) -> "EmotionEngine":
+        """傲娇萝莉基线实例（BASELINE 向量；state_file 可选持久化）。"""
+        return cls(state_file=state_file)
+
     # ── 持久化 ──
     def _load(self) -> dict | None:
         if not (self.state_file and self.state_file.exists()):
