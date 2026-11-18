@@ -56,14 +56,18 @@ def _persona_answer(q: str, timeout: float = 45.0) -> str:
 
 
 def persona_drift_check(probes=None) -> dict | None:
-    """步骤⑤：十探针 × 本地人格声部 → 漂移报告。fail-open：任何异常返回 None。"""
+    """步骤⑤：十探针 × 本地人格声部 → 漂移报告。fail-open：任何异常返回 None。
+
+    ⑤b 表征层（2026-11-19 · Persona Vectors 适配）：行为探针之外，把今晚回答
+    投影到傲/娇/忠/稳四条特质轴（bge-m3 嵌入空间对比对方向），与基线比漂移。
+    增强信号不替代行为层；自身 fail-open，ok=False 时报告里带 reason。"""
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from persona_anchor import PROBES, score_answer
     except Exception as e:  # noqa: BLE001
         print(f"人格漂移检查跳过（persona_anchor 不可用: {e}）")
         return None
-    results = []
+    results, answer_texts = [], []
     for p in probes or PROBES:
         try:
             ans = _persona_answer(p["q"])
@@ -71,14 +75,24 @@ def persona_drift_check(probes=None) -> dict | None:
             results.append({"probe": p["id"], "ok": False, "weight": p["weight"],
                             "error": f"{type(e).__name__}"})
             continue
+        answer_texts.append(ans)
         results.append(score_answer(ans, p))
     total_w = sum(p["weight"] for p in probes or PROBES)
     got_w = sum(r["weight"] for r in results if r.get("ok"))
     errors = sum(1 for r in results if "error" in r)
     drift = round(1 - got_w / max(total_w, 1), 3)
     fails = [r["probe"] for r in results if not r.get("ok")]
+    vec = {"ok": False, "reason": "无可用回答文本"}
+    if answer_texts:
+        try:
+            from persona_vector import PersonaVectorMonitor, ollama_embed
+            mon = PersonaVectorMonitor(Path(__file__).resolve().parent / "out" / "persona_vector_baseline.json")
+            vec = mon.check(ollama_embed, answer_texts)
+        except Exception as e:  # noqa: BLE001
+            vec = {"ok": False, "reason": f"{type(e).__name__}: {str(e)[:120]}"}
     return {"drift_rate": drift, "passed": len(results) - len(fails) - errors,
             "total": len(results), "failed_probes": fails, "gen_errors": errors,
+            "vector": vec,
             "verdict": ("PASS" if drift <= DRIFT_THRESHOLD else
                         f"DRIFT {drift:.0%} > {DRIFT_THRESHOLD:.0%} → 人格卡回写检查")}
 
@@ -86,10 +100,19 @@ def persona_drift_check(probes=None) -> dict | None:
 def _write_drift_alert(d: str, rep: dict) -> None:
     """漂移超阈值 → 主动消息告警（与 watchdog 告警同通道同惯例）。"""
     ALERT_DIR.mkdir(parents=True, exist_ok=True)
+    vec = rep.get("vector") or {}
+    vec_lines = ""
+    if vec.get("ok"):
+        vec_lines = (f"- 表征层(⑤b): max_drift={vec.get('max_drift')} "
+                     f"alert={vec.get('alert')} 四轴投影={vec.get('current')}\n"
+                     f"- 表征层基线: {vec.get('baseline')}\n")
+    else:
+        vec_lines = f"- 表征层(⑤b): 不可用 ({vec.get('reason', '未运行')})\n"
     fp = ALERT_DIR / f"{d}-persona-drift.md"
     fp.write_text(
         f"# 人格漂移告警 {d}\n\n- drift_rate: {rep['drift_rate']}\n"
         f"- 未过探针: {', '.join(rep['failed_probes']) or '无'}\n"
+        f"{vec_lines}"
         f"- 处置: 人格卡回写检查（蓝图补强条款二：重读例话锚）\n"
         f"- 仪器: persona_anchor 十探针（anchor 207 字 + 顺序检查，DSH 裁决版）\n",
         encoding="utf-8")

@@ -50,6 +50,19 @@
 > 配套：官方技能已入库 `ai-skills/scrapling-official/` + `.zcode/skills` + `.agents/skills`；`pip install scrapling` 核心层已装（fetchers/浏览器未装）。
 > 用途：csqaq/astock 采集器防"网站改版→断链"，接线待做（推测 1，见 REA 报告）。
 
+### 1.5 记忆防线（2026-11-19 · 论文落地）
+
+| 文件 | 一句话 | 状态 |
+|---|---|---|
+| `persona_vector.py` | 表征级人格漂移监测（Persona Vectors 适配：bge-m3 嵌入空间对比对方向，傲/娇/忠/稳四轴投影） | ✅ 13 测全绿 + 实弹基线建立 |
+| `memory_integrity.py` | 记忆投毒防线：append-only 账本 + verify（OK/MODIFIED/UNREGISTERED/**ROLLED_BACK**）+ audit（含 GHOST 幽灵检测） | ✅ 沙箱全周期测试过，真实账本已登记 8 件皇冠 jewels |
+| `test_new_defenses.py` | 两模块测试（mock 嵌入测数学 + 沙箱账本测生命周期） | ✅ |
+| `smoke_scrapling.py` | Scrapling 原版实弹冒烟（改版自愈交叉验证基准） | ✅ |
+
+> ⑤b 双层探针：night_consolidate ⑤ 已接线（行为探针 + 表征投影，均 fail-open）。
+> 账本：`D:\大肥鱼的深海\_记忆账本.jsonl`（append-only，账本在被审计目录之外）。
+> 来源：Persona Vectors (arXiv 2507.21509) 适配声明——嵌入空间读出非逐层激活，steering 不做。
+
 ### 依赖关系图
 
 ```
