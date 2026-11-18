@@ -143,6 +143,43 @@ class TestMemoryIntegrity(unittest.TestCase):
         r = mi.cmd_audit(str(self.mem), self.ledger)
         self.assertNotIn(str(self.ledger.resolve()), r["detail"].get("OK", []))
 
+    def test_audit_event_logged_with_source(self):
+        """v2: audit 必须留痕——谁、何时、目录、结果摘要进账本。"""
+        self._register(source="master")
+        before = len(mi.load_ledger(self.ledger))
+        r = mi.cmd_audit(str(self.mem), self.ledger, source="dsh")
+        self.assertTrue(r["audit_event_logged"])
+        self.assertEqual(r["auditor"], "dsh")
+        after = mi.load_ledger(self.ledger)
+        self.assertEqual(len(after), before + 1)
+        ev = after[-1]
+        self.assertEqual(ev["event"], "audit")
+        self.assertEqual(ev["source"], "dsh")
+        self.assertEqual(ev["summary"]["OK"], 1)
+        # 审计事件无 path/sha256 字段 → 不得混进文件历史
+        self.assertEqual(mi._history(after, str(self.f1))[0]["source"], "master")
+
+    def test_anchor_update_and_check(self):
+        """v2: 异地哈希锚——update 后 check=OK；改账本后 check=MISMATCH。"""
+        self._register()
+        u = mi.cmd_anchor("update", self.ledger)
+        self.assertTrue(u["anchored"])
+        c = mi.cmd_anchor("check", self.ledger)
+        self.assertEqual(c["verdict"], "OK")
+        # 篡改账本（追加一行）→ 锚失配
+        with open(self.ledger, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": "恶意", "event": "forged"}) + "\n")
+        c2 = mi.cmd_anchor("check", self.ledger)
+        self.assertEqual(c2["verdict"], "MISMATCH")
+
+    def test_audit_ignores_ledger_inside_tree(self):
+        """v2 兜底: 账本意外落在审计树内时，audit 不给它分类（防自指）。"""
+        sneaky_ledger = self.mem / "_账本.jsonl"  # 故意放审计树内
+        self._register()  # 注册用的还是外面那个正常账本
+        r = mi.cmd_audit(str(self.mem), self.ledger)
+        self.assertNotIn(str(sneaky_ledger.resolve()),
+                         r["detail"].get("UNREGISTERED", []))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
