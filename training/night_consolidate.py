@@ -136,9 +136,12 @@ def _write_drift_alert(d: str, rep: dict) -> None:
         encoding="utf-8")
 
 
-def main() -> int:
-    d = date.today().isoformat() if "--date" not in sys.argv else sys.argv[sys.argv.index("--date") + 1]
-    f = DAILY / f"{d}.md"
+def main(argv: list | None = None) -> int:
+    argv = sys.argv if argv is None else argv  # 可注入(E2E 沙箱);默认读真实命令行
+    d = date.today().isoformat() if "--date" not in argv else argv[argv.index("--date") + 1]
+    daily_dir = (Path(argv[argv.index("--daily-dir") + 1])
+                 if "--daily-dir" in argv else DAILY)  # 沙箱口: E2E 测试用,不碰 dsh 真目录
+    f = daily_dir / f"{d}.md"
     if not f.exists():
         print(f"当日 daily 不存在: {f}")
         return 2
@@ -176,8 +179,9 @@ def main() -> int:
                                 json.loads(CORPUS.read_text(encoding="utf-8")))
             if evo_rep.get("ok") and evo_rep["n_contradictions"]:
                 ME.push_alert(d, evo_rep)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — fail-open,但必须留痕(静默跳过=collect-daily 事故同款病)
         print(f"记忆演化检查异常跳过: {type(e).__name__}: {e}")
+        evo_rep = {"ok": False, "error": f"{type(e).__name__}: {e}"}
     # daily 一行（幂等标记即本行）
     total = sum(1 for _ in io.open(QUEUE, encoding="utf-8")) if QUEUE.exists() else 0
     with io.open(f, "a", encoding="utf-8", newline="\n") as df:
