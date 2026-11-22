@@ -133,7 +133,7 @@ def build_push(day):
 
     lines.append("")
     lines.append("💡 详细: 晨屏.html | 注册表.html | 使用证明.html")
-    lines.append("⏰ 下次更新: 15:40 (run_daily) 或 21:00 (夜间巩固)")
+    lines.append("⏰ 下次更新: 15:40 (run_daily) 或 23:30 (夜间巩固)")
 
     return "\n".join(lines)
 
