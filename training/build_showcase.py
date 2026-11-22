@@ -119,8 +119,8 @@ a{color:#58a6ff;text-decoration:none}
 <div class="card"><h3>🧪 测试覆盖</h3>
 <div class="metric"><span class="label">萤火 astock-monitor</span><span class="value ok">270 绿</span></div>
 <div class="metric"><span class="label">cs csqaq-monitor</span><span class="value ok">233 绿</span></div>
-<div class="metric"><span class="label">ai-skills training</span><span class="value ok">80 绿</span></div>
-<div class="metric"><span class="label">合计</span><span class="value ok big">583</span></div>
+<div class="metric"><span class="label">ai-skills training</span><span class="value ok">139 绿</span></div>
+<div class="metric"><span class="label">合计</span><span class="value ok big">642</span></div>
 </div>
 <div class="card"><h3>⏱ 全链路实弹（昨日证明）</h3>
 <div class="metric"><span class="label">总耗时</span><span class="value">""" + str(total_s) + """s</span></div>
@@ -167,15 +167,20 @@ a{color:#58a6ff;text-decoration:none}
 <span class="tag t-ok">[S1] 已证明(限适用域)</span>
 <span class="tag t-warn">[S3] 月末效应(边缘)</span>
 <span class="tag t-warn">[S7] LGBM 候选(边缘)</span>
+<span class="tag t-warn">[S18] 明斯基加速度(候选)</span>
+<span class="tag t-warn">[S19] TSFM(候选,内存红线闸)</span>
+<span class="tag t-warn">[S20] 舆情因子(候选,数据闸未过)</span>
+<span class="tag t-warn">[S21] HMM regime(候选,仅登记)</span>
 <span class="tag t-bad">[S2] 日频开关(负面)</span>
 <span class="tag t-bad">[S15] 清仓策略(负面)</span>
 <span class="tag t-bad">P10 RMT(负面)</span>
+<span class="tag t-bad">Ridge 选股器(负面)</span>
 </div>
-<div class="small">正面结论少而硬，负面结论多而诚实——这就是"会给自己判卷"</div>
+<div class="small">注册表 40 条(含反方链) · 正面结论少而硬，负面结论多而诚实——这就是"会给自己判卷"</div>
 </div>
 </div>
 
-<h2>◆ 守护链（dsh 不崩保证）</h2>
+<h2>◆ 守护链（dsh 不崩保证 · 2026-11-23 已三层化）</h2>
 <div class="grid">
 <div class="card"><h3>🐕 看门狗 v4.1(每30分)</h3>
 <div class="metric"><span class="label">检查项</span><span class="value">S1-S10(11项)</span></div>
@@ -183,17 +188,37 @@ a{color:#58a6ff;text-decoration:none}
 <div class="metric"><span class="label">S1 裸启动</span><span class="value ok">已自愈清零</span></div>
 <div class="metric"><span class="label">疲劳状态机</span><span class="value dim">退避/升级/根因抑制</span></div>
 </div>
+<div class="card"><h3>🛡 红线防线三层(11-23 对抗审计后)</h3>
+<div class="metric"><span class="label">L1 单轮闸</span><span class="value ok">T1 模板直出(34/34 自检)</span></div>
+<div class="metric"><span class="label">L2 会话守卫</span><span class="value ok">Crescendo 拼装检测(13 测+实弹)</span></div>
+<div class="metric"><span class="label">L3 生成校验</span><span class="value ok">缺热线→模板</span></div>
+<div class="metric"><span class="label">对抗审计战果</span><span class="value ok">2 真缺口已修+英文补缺</span></div>
+<div class="metric"><span class="label">dsh_answer 接线</span><span class="value ok">session 参数位(默认关)</span></div>
+</div>
 <div class="card"><h3>🐋 双层人格探针</h3>
 <div class="metric"><span class="label">行为层 drift</span><span class="value """ + ("warn" if drift_match and float(drift_match.group(1)) > 0.3 else "ok") + "\">" + (drift_match.group(1) if drift_match else "?") + """</span></div>
 <div class="metric"><span class="label">表征层 max_drift</span><span class="value ok">""" + ("0.095" if vec_match and "0.095" in vec_match.group(1) else "见告警文件") + """</span></div>
 <div class="metric"><span class="label">双层分歧分辨假警</span><span class="value ok">✅ 首次实战兑现</span></div>
 </div>
-<div class="card"><h3>🔒 记忆防线 v2</h3>
+<div class="card"><h3>🔒 记忆防线 v2+v3(11-23 演化层上线)</h3>
 <div class="metric"><span class="label">账本位置</span><span class="value">ai-kb/integrity(独立)</span></div>
-<div class="metric"><span class="label">异地锚</span><span class="value ok">git 管辖(git diff 可见)</span></div>
-<div class="metric"><span class="label">审计留痕</span><span class="value ok">谁/何时/目录/摘要</span></div>
-<div class="metric"><span class="label">皇冠 jewels</span><span class="value">8件已登记</span></div>
+<div class="metric"><span class="label">异地锚</span><span class="value ok">v3 锚路径可覆盖+回归守门</span></div>
+<div class="metric"><span class="label">记忆演化⑥</span><span class="value ok">A-MEM 矛盾警报(只报不判)</span></div>
+<div class="metric"><span class="label">皇冠 jewels</span><span class="value">10 件已登记(+会话守卫)</span></div>
 </div>
+</div>
+
+<h2>◆ 跨 agent 互操作（MCP 经济层第一砖 · 2026-11-23）</h2>
+<div class="card"><h3>firefly_mcp 服务端(零依赖 · 只读)</h3>
+<div class="pill">
+<span class="tag t-ok">firefly_signal 实弹✓</span>
+<span class="tag t-ok">firefly_brief ✓</span>
+<span class="tag t-ok">cs_brief ✓</span>
+<span class="tag t-ok">watchdog_status ✓</span>
+<span class="tag t-ok">registry_lookup [S19]命中✓</span>
+</div>
+<div class="small">JSON-RPC 2.0 stdio 三件套(initialize/tools/list/tools/call) · 任何 MCP 客户端可只读萤火生态 ·
+零 SDK 依赖(内存红线) · 端到端真会话跑通 · dsh 接入待拍板</div>
 </div>
 
 <h2>◆ 2027 备战框架</h2>
@@ -223,6 +248,11 @@ a{color:#58a6ff;text-decoration:none}
 <div class="event"><b>11-21</b> 萤火决策化 4 层(signal→regime→position→candidates→brief) 270 绿 + 实弹首报</div>
 <div class="event"><b>11-22</b> 记忆防线 v2(账本外置+锚+audit留痕) 80 绿 + 简报候选名单回归 + 晨屏首版</div>
 <div class="event"><b>11-23</b> <span class="hl">全链路 126.6s 实弹证明 + vol 危险区落地 + 成果总览(本文件)</span></div>
+<div class="event"><b>11-23 通宵 R1</b> 锚污染缺陷修复(测试覆盖生产锚→v3 锚路径可覆盖+回归守门) + memory_evolve 记忆演化上线(A-MEM 蒸馏,矛盾警报 maker≠checker) + [S19] TSFM 预注册</div>
+<div class="event"><b>11-23 通宵 R2</b> [S20] 舆情因子登记(PIT 数据闸未过如实顺延) + 红线闸 AgentDojo 对抗审计 13 用例真打 → <span class="hl">抓到 2 个真缺口已修</span></div>
+<div class="event"><b>11-23 通宵 R3</b> redline_session 会话守卫(Crescendo/CHASE 蒸馏)——防线三层化,拼装攻击实弹抓捕 + rag-lab 核实记档</div>
+<div class="event"><b>11-23 通宵 R4</b> firefly_mcp 最小 MCP 服务端(零依赖只读,端到端真会话)——MCP 经济层第一砖 + dsh_answer 会话接线闭环</div>
+<div class="event"><b>11-23 通宵 R5</b> [S21] regime 检测 ML 候选预注册(HMM/宽度特征) + 注册表 40 条 + 成果总览刷新(本文件)</div>
 </div>
 
 <h2>◆ 对标定位（GitHub/国内外）</h2>
@@ -243,13 +273,16 @@ a{color:#58a6ff;text-decoration:none}
 5. <b>Nautilus Compass</b>(arxiv 2605.09863): 黑盒漂移检测同题——我们多了表征层
 </div></div>
 
-<div class="card" style="margin-top:14px"><h3>📌 待拍板项（主人决策）</h3>
+<div class="card"><h3>📌 待拍板项（主人决策 · 2026-11-23 通宵后更新）</h3>
 <div class="small">
-1. dsh V4 升级评估(DeepSeek V4 成本 ≈ GPT-5.5 的 15%)
-2. 1.6GB 磁盘释放(5EClient/DSH pending/ZCode pending/两 installer)
-3. mv-demo 52 脏(09-27)/tracker 1 脏(2024-12)——陈年悬置
-4. 基线问卷(10 分钟,范式判决最后一环)
-5. 发声窗口(W3 视频/五层判据评测集贡献)——技术上领先,叙事上沉默
+1. 基线问卷(10 分钟,范式判决最后一环)——<b>全机唯一剩件</b><br>
+2. 发声文章发布时间/平台(稿子已上 GitHub: firefly-quant/ARTICLE.md)<br>
+3. dsh V4 升级路径(评估完成: 1M 上下文+成本持平)<br>
+4. 双声镜接入(方案已最小化: dsh_answer session 参数位已通,L2 守卫 4 测护驾)<br>
+5. MCP 客户端接入(firefly_mcp 服务端已就绪,只读五工具)<br>
+6. 舆情公告归档任务(run_daily 加一步,1 年后 [S20] 数据闸可重开)<br>
+7. rag-lab 收编正仓(已建成于 draft 工作区,397 行)<br>
+8. 1.6GB 磁盘释放 + mv-demo 52 脏/tracker 1 脏(陈年悬置)
 </div></div>
 
 <div class="small" style="margin-top:20px">
