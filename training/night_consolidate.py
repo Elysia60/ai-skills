@@ -12,6 +12,8 @@
   ④ daily 写一行 [夜间巩固]（幂等：当日已写则跳过）
   ⑤ 人格漂移检查（2026-11-17 新增 · P0 落地：十探针 × 本地人格声部 → 漂移率；
      超阈值 0.30 推主动消息告警=L5 修复前置；fail-open——增强层崩溃绝不影响①-④）
+  ⑥ 记忆演化检查（2026-11-23 新增 · A-MEM 蒸馏：当日抽取的教训行 × 结论注册表语料
+     → 矛盾警报(黄,推主动消息待主人裁决)/关联/强化；fail-open 同⑤）
 用法：python night_consolidate.py [--date 2026-10-25]
 退出码：0=正常（含"无新教训"）；2=当日文件不存在。
 """
@@ -29,6 +31,7 @@ QUEUE = Path(r"C:\Users\14676\.zcode\workspace\default\ai-skills\training\consol
 MARK = "[夜间巩固]"
 PATS = re.compile(r"修正|认领|抓到|踩|教训|事故|✗|FAIL|bug|bug|犯错|虚报|误判|根因", re.I)
 ALERT_DIR = Path(r"D:\大肥鱼的深海\主动消息")
+CORPUS = Path(r"C:\Users\14676\.zcode\workspace\default\ai-skills\training\out\memory_corpus.json")
 DRIFT_THRESHOLD = 0.30  # 漂移率超过 → 告警（L5 修复前置：人格卡回写检查）
 OLLAMA = "http://localhost:11434"
 PERSONA_MODEL = "modelscope.cn/Qwen/Qwen2.5-7B-Instruct-GGUF:latest"
@@ -163,6 +166,18 @@ def main() -> int:
         drift_rep = persona_drift_check()
     except Exception as e:  # noqa: BLE001
         print(f"人格漂移检查异常跳过: {type(e).__name__}: {e}")
+    # ⑥ 记忆演化检查（2026-11-23 · A-MEM 蒸馏：教训行 × 注册表语料 → 矛盾/关联/强化；
+    #    fail-open 同⑤——矛盾只推警报待主人裁决，不自动改账本/注册表）
+    evo_rep = None
+    try:
+        if n and CORPUS.exists():
+            import memory_evolve as ME
+            evo_rep = ME.evolve([h[:220] for h in hits],
+                                json.loads(CORPUS.read_text(encoding="utf-8")))
+            if evo_rep.get("ok") and evo_rep["n_contradictions"]:
+                ME.push_alert(d, evo_rep)
+    except Exception as e:  # noqa: BLE001
+        print(f"记忆演化检查异常跳过: {type(e).__name__}: {e}")
     # daily 一行（幂等标记即本行）
     total = sum(1 for _ in io.open(QUEUE, encoding="utf-8")) if QUEUE.exists() else 0
     with io.open(f, "a", encoding="utf-8", newline="\n") as df:
@@ -172,7 +187,19 @@ def main() -> int:
                      f"未过探针={','.join(drift_rep['failed_probes']) or '无'}\n")
         else:
             df.write("[人格漂移] 检查未执行（生成器不可用）\n")
+        if evo_rep is not None:
+            if evo_rep.get("ok"):
+                df.write(f"[记忆演化] 矛盾={evo_rep['n_contradictions']} "
+                         f"强化={evo_rep['n_reinforce']} 关联={evo_rep['n_links']} "
+                         f"新话题={evo_rep['n_new_topics']}\n")
+            else:
+                df.write(f"[记忆演化] 跳过（{evo_rep.get('error', '嵌入不可用')}）\n")
     print(f"巩固完成：抽取 {n} 行入队列（累计 {total}）")
+    if evo_rep and evo_rep.get("ok"):
+        print(f"记忆演化: 矛盾={evo_rep['n_contradictions']} "
+              f"强化={evo_rep['n_reinforce']} 关联={evo_rep['n_links']}")
+        if evo_rep["n_contradictions"]:
+            print("  → 已推主动消息警报（待主人裁决）")
     if drift_rep:
         print(f"人格漂移: drift={drift_rep['drift_rate']:.0%} 判定={drift_rep['verdict']}")
         if drift_rep["drift_rate"] > DRIFT_THRESHOLD:
