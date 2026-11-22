@@ -161,26 +161,28 @@ def _ledger_fingerprint(ledger: Path) -> dict:
             "lines": sum(1 for l in raw.decode("utf-8", errors="replace").splitlines() if l.strip())}
 
 
-def cmd_anchor(mode: str, ledger: Path) -> dict:
+def cmd_anchor(mode: str, ledger: Path, anchor_path: Path | None = None) -> dict:
+    # v3: 锚路径可覆盖——测试/多账本场景绝不触碰生产锚(2026-11-23 教训: 测试夹具曾覆盖真锚)
+    anchor = Path(anchor_path) if anchor_path else ANCHOR
     fp = _ledger_fingerprint(ledger)
     if mode == "update":
         prev = {}
-        if ANCHOR.exists():
+        if anchor.exists():
             try:
-                prev = json.loads(ANCHOR.read_text(encoding="utf-8"))
+                prev = json.loads(anchor.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 prev = {}
         data = {"ts": _now(), "ledger_sha256": fp["sha256"], "lines": fp["lines"],
                 "bytes": fp["bytes"], "prev_sha256": prev.get("ledger_sha256", "")}
-        ANCHOR.parent.mkdir(parents=True, exist_ok=True)
-        ANCHOR.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+        anchor.parent.mkdir(parents=True, exist_ok=True)
+        anchor.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
         return {"anchored": True, **{k: v for k, v in data.items() if k != "prev_sha256"},
-                "anchor_path": str(ANCHOR)}
+                "anchor_path": str(anchor)}
     if mode == "check":
-        if not ANCHOR.exists():
+        if not anchor.exists():
             return {"verdict": "NO_ANCHOR", "detail": "锚文件不存在，先 anchor update"}
         try:
-            a = json.loads(ANCHOR.read_text(encoding="utf-8"))
+            a = json.loads(anchor.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return {"verdict": "ANCHOR_CORRUPT"}
         if a.get("ledger_sha256") == fp["sha256"]:
@@ -201,6 +203,7 @@ def main(argv: list) -> int:
     ledger = LEDGER
     if "--ledger" in argv:
         ledger = Path(argv[argv.index("--ledger") + 1])
+    anchor_path = Path(argv[argv.index("--anchor") + 1]) if "--anchor" in argv else None
     if len(argv) < 2:
         print(__doc__)
         return 2
@@ -221,7 +224,7 @@ def main(argv: list) -> int:
         print(json.dumps(r, ensure_ascii=False, indent=1))
         return 0
     if cmd == "anchor" and len(argv) > 2:
-        r = cmd_anchor(argv[2], ledger)
+        r = cmd_anchor(argv[2], ledger, anchor_path)
         print(json.dumps(r, ensure_ascii=False))
         return 0 if r.get("verdict") in ("OK", None) or r.get("anchored") else 1
     print(__doc__)

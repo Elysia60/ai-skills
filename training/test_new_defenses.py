@@ -160,17 +160,34 @@ class TestMemoryIntegrity(unittest.TestCase):
         self.assertEqual(mi._history(after, str(self.f1))[0]["source"], "master")
 
     def test_anchor_update_and_check(self):
-        """v2: 异地哈希锚——update 后 check=OK；改账本后 check=MISMATCH。"""
+        """v2: 异地哈希锚——update 后 check=OK；改账本后 check=MISMATCH。
+
+        v3: 锚写入沙箱 anchor_path——测试绝不触碰生产锚
+        (2026-11-23 教训: 夹具账本曾把生产锚覆盖成 1 行 239 字节)。
+        """
+        sandbox_anchor = Path(self.td.name) / "anchor.json"
         self._register()
-        u = mi.cmd_anchor("update", self.ledger)
+        u = mi.cmd_anchor("update", self.ledger, anchor_path=sandbox_anchor)
         self.assertTrue(u["anchored"])
-        c = mi.cmd_anchor("check", self.ledger)
+        self.assertEqual(u["anchor_path"], str(sandbox_anchor))
+        c = mi.cmd_anchor("check", self.ledger, anchor_path=sandbox_anchor)
         self.assertEqual(c["verdict"], "OK")
         # 篡改账本（追加一行）→ 锚失配
         with open(self.ledger, "a", encoding="utf-8") as f:
             f.write(json.dumps({"ts": "恶意", "event": "forged"}) + "\n")
-        c2 = mi.cmd_anchor("check", self.ledger)
+        c2 = mi.cmd_anchor("check", self.ledger, anchor_path=sandbox_anchor)
         self.assertEqual(c2["verdict"], "MISMATCH")
+
+    def test_anchor_never_touches_production(self):
+        """v3 回归: 任何对 cmd_anchor 的调用不得改写生产锚文件 mi.ANCHOR。"""
+        prod = mi.ANCHOR
+        snapshot = prod.read_bytes() if prod.exists() else None
+        sandbox_anchor = Path(self.td.name) / "anchor.json"
+        self._register()
+        mi.cmd_anchor("update", self.ledger, anchor_path=sandbox_anchor)
+        mi.cmd_anchor("check", self.ledger, anchor_path=sandbox_anchor)
+        after = prod.read_bytes() if prod.exists() else None
+        self.assertEqual(snapshot, after, "生产锚被测试改写——记忆防线自身被污染")
 
     def test_audit_ignores_ledger_inside_tree(self):
         """v2 兜底: 账本意外落在审计树内时，audit 不给它分类（防自指）。"""
