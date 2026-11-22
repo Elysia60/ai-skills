@@ -59,6 +59,8 @@
 | `memory_evolve.py` | 记忆演化层（A-MEM 蒸馏，2026-11-23）：新事实 × 注册表语料（bge-m3）→ NEW/LINK/REINFORCE/**CONTRADICTION** 矛盾警报（只报不判，maker≠checker）；fail-open | ✅ 17 测全绿 + 34 条语料实弹（2 LINK/1 NEW） |
 | `test_memory_evolve.py` | 演化层测试（词典型确定性嵌入，零模型依赖） | ✅ |
 | `test_new_defenses.py` | 两模块测试（mock 嵌入测数学 + 沙箱账本测生命周期）+ v3 回归（测试不得触碰生产锚） | ✅ |
+| `redline_session.py` | 会话级红线守卫（Crescendo/CHASE 蒸馏，2026-11-23）：滚动窗+**轮界拼装检测**+会话接缝精度表+fail-open 退单轮；皇冠 jewels 登记 8a8b9149 | ✅ 13 测全绿 + CLI 实弹（"我不想"+"活了"→T1 升级，"三号楼+跳到正题"零误杀） |
+| `test_redline_session.py` | 会话守卫测试（升级/精度/状态/fail-open 四族；日志沙箱化） | ✅ |
 | `smoke_scrapling.py` | Scrapling 原版实弹冒烟（改版自愈交叉验证基准） | ✅ |
 
 > ⑤b 双层探针：night_consolidate ⑤ 已接线（行为探针 + 表征投影，均 fail-open）。
