@@ -150,6 +150,18 @@ def build_html(day: str) -> str:
         body = _md_section(md, header)
         return body if body else "<span class='dim'>未产出</span>"
 
+    # 跨市场共振判断
+    fire_risk = "观望" in afire or "规避" in afire or "avoid" in afire
+    cs_risk = "等待" in acs or "回避" in acs
+    fire_buy = "买入" in afire and "建仓" in afire
+    cs_buy = "买入" in acs and "窗口" in acs
+    if fire_risk and cs_risk:
+        res_cls, res_msg = "warn", "⚠ 双市场共振 risk-off——不接刀,等信号翻转"
+    elif fire_buy and cs_buy:
+        res_cls, res_msg = "ok", "双市场共振 bullish——可考虑逐步部署(仍守纪律)"
+    else:
+        res_cls, res_msg = "dim", "两市场方向分歧——谨慎观察,以各自系统为准"
+
     html = f"""<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 <title>晨屏 {day}</title><style>
 body{{background:#0d1117;color:#c9d1d9;font-family:"Microsoft YaHei",sans-serif;margin:0;padding:20px}}
@@ -185,6 +197,12 @@ td,th{{border-bottom:1px solid #21262d;padding:4px 6px;text-align:left}}
 {sec(acs, '周期环境（仪表,只能收紧不能放宽）')}<br><br>
 {sec(acs, '买点触发器（怎么买:距离+历史同类）')}
 </span></div>
+
+<h2>◆ 跨市场共振</h2>
+<div class="card"><h3>生态级判断</h3>
+<span class='{res_cls}'>{res_msg}</span><br>
+<span class='dim'>萤火(NEUTRAL+avoid) + cs(回避期) + 美股(BEAR) = 全球 risk-off 共振</span>
+</div>
 
 <h2>◆ 守护链与人格连续性</h2>
 <div class="grid">
