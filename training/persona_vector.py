@@ -28,6 +28,7 @@ language models" (arXiv 2507.21509)。原方法: 模型激活空间逐层提取�
 from __future__ import annotations
 
 import json
+import time
 import urllib.request
 from pathlib import Path
 
@@ -105,17 +106,28 @@ BASELINE_VERSION = 1
 
 
 def ollama_embed(text: str, model: str = DEFAULT_MODEL,
-                 host: str = "http://127.0.0.1:11434") -> list[float]:
-    """bge-m3 嵌入（1024 维）。ollama 不可用/超时 → 抛异常（调用方 fail-open）。"""
-    req = urllib.request.Request(
-        f"{host}/api/embeddings",
-        data=json.dumps({"model": model, "prompt": text[:2000]}).encode("utf-8"),
-        headers={"Content-Type": "application/json"}, method="POST")
-    r = json.load(urllib.request.urlopen(req, timeout=20))
-    v = r.get("embedding") or []
-    if not v:
-        raise RuntimeError(f"空嵌入: {model}")
-    return v
+                 host: str = "http://127.0.0.1:11434",
+                 timeout: int = 60, retries: int = 2) -> list[float]:
+    """bge-m3 嵌入（1024 维）。夜间批处理时段 ollama 可能忙——重试+放宽超时
+    （v4.1: 2026-11-20 首夜 TimeoutError 教训,20s 太短）。
+    重试耗尽仍失败 → 抛异常（调用方 fail-open,行为层继续）。"""
+    req_data = json.dumps({"model": model, "prompt": text[:2000]}).encode("utf-8")
+    last_err: Exception | None = None
+    for attempt in range(retries + 1):
+        req = urllib.request.Request(
+            f"{host}/api/embeddings", data=req_data,
+            headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            r = json.load(urllib.request.urlopen(req, timeout=timeout))
+            v = r.get("embedding") or []
+            if not v:
+                raise RuntimeError(f"空嵌入: {model}")
+            return v
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            if attempt < retries:
+                time.sleep(2 ** attempt)  # 1s, 2s 退避
+    raise last_err if last_err else RuntimeError("嵌入失败(未知)")
 
 
 def _mean(vs: list[list[float]]) -> list[float]:

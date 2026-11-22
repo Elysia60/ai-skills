@@ -20,8 +20,11 @@ def main() -> int:
     today = date.today().isoformat()
     f = DAILY / f"{today}.md"
     if not f.exists():
-        print(f"当日 daily 不存在: {f}")
-        return 2
+        # 2026-11-20 修：周测 09:00 跑在 DailyClosure(21:00) 之前，daily 天然还不存在——
+        # 原实现直接 rc=2（WeeklyQuiz 11-16 红项根因）。改为先建当日文件骨架再抽题。
+        DAILY.mkdir(parents=True, exist_ok=True)
+        f.write_text(f"\n## [DSH-周测] {today}\n", encoding="utf-8")
+        print(f"当日 daily 不存在，已建骨架: {f}")
     text = f.read_text(encoding="utf-8")
     if MARK in text:
         print("幂等：今日已抽题")
