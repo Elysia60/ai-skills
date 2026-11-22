@@ -43,16 +43,25 @@ PERSONA_CARD = (
 )
 
 
-def _persona_answer(q: str, timeout: float = 45.0) -> str:
-    """本地人格声部生成（夜间用，keep_alive 默认——批内驻留、批后自动卸载）。"""
+def _persona_answer(q: str, timeout: float = 90.0, retries: int = 2) -> str:
+    """本地人格声部生成（夜间用）。v4.2: 重试 2 次+退避+90s 超时——
+    2026-11-22 夜 80% 假漂移教训（回填 4 lane 与探针抢资源,45s 全超时）。"""
     body = {"model": PERSONA_MODEL, "stream": False,
             "messages": [{"role": "system", "content": PERSONA_CARD},
                          {"role": "user", "content": q}],
             "options": {"temperature": 0.6, "num_predict": 220}}
-    req = urllib.request.Request(OLLAMA + "/api/chat", data=json.dumps(body).encode("utf-8"),
-                                 headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8"))["message"]["content"].strip()
+    last_err = None
+    for attempt in range(retries + 1):
+        req = urllib.request.Request(OLLAMA + "/api/chat", data=json.dumps(body).encode("utf-8"),
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode("utf-8"))["message"]["content"].strip()
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            if attempt < retries:
+                time.sleep(3 * (attempt + 1))
+    raise last_err if last_err else RuntimeError("生成失败")
 
 
 def persona_drift_check(probes=None) -> dict | None:
@@ -80,8 +89,14 @@ def persona_drift_check(probes=None) -> dict | None:
     total_w = sum(p["weight"] for p in probes or PROBES)
     got_w = sum(r["weight"] for r in results if r.get("ok"))
     errors = sum(1 for r in results if "error" in r)
-    drift = round(1 - got_w / max(total_w, 1), 3)
-    fails = [r["probe"] for r in results if not r.get("ok")]
+    # v4.2: gen_errors(超时/资源冲突)与真失败分离——errors 不计入 drift,
+    # 否则资源冲突夜会报假漂移(11-22 夜 80% 教训);分母只算真正跑完的探针
+    scored = [r for r in results if r.get("ok") is not False]
+    total_w2 = sum(p["weight"] for p, r in zip(probes or PROBES, results)
+                   if r.get("ok") is not False)
+    got_w2 = sum(r["weight"] for r in scored if r.get("ok"))
+    drift = round(1 - got_w2 / max(total_w2, 1), 3)
+    fails = [r["probe"] for r in scored if not r.get("ok")]
     vec = {"ok": False, "reason": "无可用回答文本"}
     if answer_texts:
         try:
