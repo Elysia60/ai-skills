@@ -117,10 +117,10 @@ a{color:#58a6ff;text-decoration:none}
 <h2>◆ 核心指标（一屏看全）</h2>
 <div class="grid">
 <div class="card"><h3>🧪 测试覆盖</h3>
-<div class="metric"><span class="label">萤火 astock-monitor</span><span class="value ok">270 绿</span></div>
+<div class="metric"><span class="label">萤火 astock-monitor</span><span class="value ok">277 绿</span></div>
 <div class="metric"><span class="label">cs csqaq-monitor</span><span class="value ok">233 绿</span></div>
 <div class="metric"><span class="label">ai-skills training</span><span class="value ok">139 绿</span></div>
-<div class="metric"><span class="label">合计</span><span class="value ok big">642</span></div>
+<div class="metric"><span class="label">合计</span><span class="value ok big">649</span></div>
 </div>
 <div class="card"><h3>⏱ 全链路实弹（昨日证明）</h3>
 <div class="metric"><span class="label">总耗时</span><span class="value">""" + str(total_s) + """s</span></div>
@@ -171,12 +171,13 @@ a{color:#58a6ff;text-decoration:none}
 <span class="tag t-warn">[S19] TSFM(候选,内存红线闸)</span>
 <span class="tag t-warn">[S20] 舆情因子(候选,数据闸未过)</span>
 <span class="tag t-warn">[S21] HMM regime(候选,仅登记)</span>
+<span class="tag t-ok">[S22] 家族 PBO=0.503(判卷设施已证明)</span>
 <span class="tag t-bad">[S2] 日频开关(负面)</span>
 <span class="tag t-bad">[S15] 清仓策略(负面)</span>
 <span class="tag t-bad">P10 RMT(负面)</span>
 <span class="tag t-bad">Ridge 选股器(负面)</span>
 </div>
-<div class="small">注册表 40 条(含反方链) · 正面结论少而硬，负面结论多而诚实——这就是"会给自己判卷"</div>
+<div class="small">注册表 42 条(含反方链) · 正面结论少而硬，负面结论多而诚实——这就是"会给自己判卷"</div>
 </div>
 </div>
 
@@ -253,6 +254,7 @@ a{color:#58a6ff;text-decoration:none}
 <div class="event"><b>11-23 通宵 R3</b> redline_session 会话守卫(Crescendo/CHASE 蒸馏)——防线三层化,拼装攻击实弹抓捕 + rag-lab 核实记档</div>
 <div class="event"><b>11-23 通宵 R4</b> firefly_mcp 最小 MCP 服务端(零依赖只读,端到端真会话)——MCP 经济层第一砖 + dsh_answer 会话接线闭环</div>
 <div class="event"><b>11-23 通宵 R5</b> [S21] regime 检测 ML 候选预注册(HMM/宽度特征) + 注册表 40 条 + 成果总览刷新(本文件)</div>
+<div class="event"><b>11-23 通宵 R6</b> PBO 解锁(计划顺位)——cscv_pbo.py 零依赖落地 + <span class="hl">[S22] 家族 PBO=0.503 实弹: 负面结论获量化概率确认</span> + 注册表 42 条</div>
 </div>
 
 <h2>◆ 对标定位（GitHub/国内外）</h2>
