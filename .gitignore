@@ -3,3 +3,4 @@
 *.safetensors
 __pycache__/
 *.pyc
+training/out/sidecar_emotion_state.json
