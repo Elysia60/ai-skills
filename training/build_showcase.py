@@ -255,6 +255,12 @@ a{color:#58a6ff;text-decoration:none}
 <div class="event"><b>11-23 通宵 R4</b> firefly_mcp 最小 MCP 服务端(零依赖只读,端到端真会话)——MCP 经济层第一砖 + dsh_answer 会话接线闭环</div>
 <div class="event"><b>11-23 通宵 R5</b> [S21] regime 检测 ML 候选预注册(HMM/宽度特征) + 注册表 40 条 + 成果总览刷新(本文件)</div>
 <div class="event"><b>11-23 通宵 R6</b> PBO 解锁(计划顺位)——cscv_pbo.py 零依赖落地 + <span class="hl">[S22] 家族 PBO=0.503 实弹: 负面结论获量化概率确认</span> + 注册表 42 条</div>
+<div class="event"><b>11-23 通宵 R7</b> 夜间巩固沙箱预演(E2E 5测+静默跳过修复)+ 全保真真嵌入预演 rc=0 + [S22] 第二枪顺延记档</div>
+<div class="event"><b>11-23 通宵 R8</b> hmm_regime.py 最小 Gaussian HMM(抓真bug: A未随机化破EM单调) + [S21]工具就绪 + 文章2(PBO=0.503诚实账本)</div>
+<div class="event"><b>11-23 通宵 R9</b> 文章2补行业坐标(DSR命门) + README同步 + dsh交接文档(新教训#5-#9)</div>
+<div class="event"><b>11-23 通宵 R10</b> [S21]试验部分执行: <span class="hl">HMM熊态无区分力(t=+1.264)→维持三票二, 判据弱点暴露入册</span></div>
+<div class="event"><b>11-23 通宵 R11</b> [S22]第二枪: margin家族PBO=0.3399——B规避规则([S18])获最强OOS存活证据, PBO=家族属性</div>
+<div class="event"><b>11-23 通宵 R12</b> 文章3(对抗审计12小时)——三篇系列齐备, 注册表46条</div>
 </div>
 
 <h2>◆ 对标定位（GitHub/国内外）</h2>
