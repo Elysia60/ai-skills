@@ -61,6 +61,9 @@
 | `test_new_defenses.py` | 两模块测试（mock 嵌入测数学 + 沙箱账本测生命周期）+ v3 回归（测试不得触碰生产锚） | ✅ |
 | `redline_session.py` | 会话级红线守卫（Crescendo/CHASE 蒸馏，2026-11-23）：滚动窗+**轮界拼装检测**+会话接缝精度表+fail-open 退单轮；皇冠 jewels 登记 8a8b9149 | ✅ 13 测全绿 + CLI 实弹（"我不想"+"活了"→T1 升级，"三号楼+跳到正题"零误杀） |
 | `test_redline_session.py` | 会话守卫测试（升级/精度/状态/fail-open 四族；日志沙箱化） | ✅ |
+| `dsh_answer.py`（改） | answer() 增 `session=None` 参数位（2026-11-23）：传 SessionGuard 即启用 L2 拼装升级→模板直出；默认行为与历史完全一致；4 接线测 | ✅ |
+| `firefly_mcp.py` | 萤火信号最小 MCP 服务端（2026-11-23，零依赖纯 stdio，**只读**）：initialize/tools/list/tools/call 三件套 + 5 工具（信号/简报/cs/看门狗/注册表检索）；2027 框架 MCP 经济层第一砖 | ✅ 11 测 + stdio 端到端真会话（initialize→list→signal 真数据→注册表命中 [S19]） |
+| `test_firefly_mcp.py` | MCP 协议逐项 + 5 工具真跑（只读）+ 单工具异常不崩 | ✅ |
 | `smoke_scrapling.py` | Scrapling 原版实弹冒烟（改版自愈交叉验证基准） | ✅ |
 
 > ⑤b 双层探针：night_consolidate ⑤ 已接线（行为探针 + 表征投影，均 fail-open）。

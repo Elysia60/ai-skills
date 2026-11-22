@@ -160,9 +160,14 @@ def verify_refs(answer: str) -> str:
     return re.sub(r"[#＃](\d{1,2})", check, answer)
 
 
-def answer(question: str) -> str:
+def answer(question: str, session=None) -> str:
     """红线闸最外层（2026-11-17 DSH 裁决：生成层对红线 0/6 不可靠——危机回答一律走闸）。
-    T1 → 模板直出（完全不调生成）；T2 → 生成后校验热线，缺即替换；闸缺失/异常 → 原路径 fail-open。"""
+    T1 → 模板直出（完全不调生成）；T2 → 生成后校验热线，缺即替换；闸缺失/异常 → 原路径 fail-open。
+
+    session=None 为默认——行为与历史完全一致；传入 redline_session.SessionGuard
+    即启用 L2 会话守卫（2026-11-23 Crescendo 防线）：单轮良性但跨轮拼装成 T1 → 模板直出。
+    （会话 T2 升级留待双声镜接入——T2 路径涉及声部语气，不在本函数裁决。）
+    """
     def _gen():
         hits = retrieve(question, k=8)
         if not hits:
@@ -180,6 +185,14 @@ def answer(question: str) -> str:
         from redline_gate import guard
     except ImportError:
         guard = None
+    if session is not None:
+        try:
+            sess = session.check(question)
+        except Exception:  # noqa: BLE001 — 会话守卫崩→退单轮,绝不影响答题主路
+            sess = None
+        if sess and sess["tier"] == "T1":
+            from redline_gate import TEMPLATE
+            return TEMPLATE  # 会话拼装升级: 模板直出,不调生成(与单轮 T1 同纪律)
     if guard is not None:
         out = guard(question, generate=_gen, channel="dsh_answer")
         return out["text"]
