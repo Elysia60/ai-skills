@@ -95,8 +95,13 @@ dsh_standing_intents.py → ~/.dsh/memories/standing_intents.json + 主动消息
 
 ### 交叉引用（Documents\Codex 侧，dsh 维护）
 
-- `redline_gate.py` — 红线确定性拦截（T1 模板/T2 验证，fail-open，审计 JSONL 62+ 条）
+- `redline_gate.py` — 红线确定性拦截（T1 模板/T2 验证，fail-open，审计 JSONL 62+ 条）；
+  **2026-11-23 AgentDojo 式对抗审计**：13 用例真打击中 2 个 T1 缺口（世界告别句式/方法索求句式）已补 + 英文 8 条，
+  自检 34/34 + 对抗 13/13，新哈希 a9313540 已重登记账本（ZCode 侧补丁，API 不变）
 - `dateparse.py` — 相对时间换算（时间线三层闭环的最底层）
+
+> 对抗套件：`test_redline_adversarial.py`（training/，攻击+效用联合测——AgentDojo 原则；
+> 审计日志重定向沙箱，测试不污染真审计）。已知局限在案：拼音混淆/跨轮拼装/编码载荷 → 会话层（双声镜）补。
 
 ---
 
